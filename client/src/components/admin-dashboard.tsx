@@ -164,7 +164,7 @@ export function AdminDashboard() {
       {/* Header */}
       <div>
         <h2 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
-        <p className="text-muted-foreground">Manage student registrations, rooms, and tag assignments</p>
+        <p className="text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
       </div>
 
       {/* Stats Cards */}
@@ -173,8 +173,8 @@ export function AdminDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold text-foreground" data-testid="stat-total-students">
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-bold text-foreground" data-testid="stat-total-users">
                   {stats.totalStudents}
                 </p>
               </div>
@@ -249,9 +249,9 @@ export function AdminDashboard() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Tags (Excel)
             </Button>
-            <Button variant="secondary" onClick={handleExport} data-testid="button-export-students">
+            <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
               <Download className="mr-2 h-4 w-4" />
-              Export Students
+              Export Users
             </Button>
             <Button variant="secondary" data-testid="button-generate-reports">
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -275,7 +275,7 @@ export function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Input
-                placeholder="Search students..."
+                placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="input-search"

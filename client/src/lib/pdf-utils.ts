@@ -11,7 +11,7 @@ export function generateUserDetailsPDF(user: User): void {
     // Title
     doc.setFontSize(20);
     doc.setTextColor(33, 150, 243); // Primary blue
-    doc.text('University Hostel Registration', 20, 30);
+    doc.text('REGISTRATION MANAGEMENT SYSTEM', 20, 30);
     
     // Subtitle
     doc.setFontSize(12);
@@ -47,11 +47,11 @@ export function generateUserDetailsPDF(user: User): void {
     // Footer
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text('This document was generated automatically by the University Hostel Management System.', 20, 200);
+    doc.text('This document was generated automatically by the REGISTRATION MANAGEMENT SYSTEM.', 20, 200);
     doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, 210);
     
     // Save the PDF
-    const fileName = `${user.firstName}_${user.surname}_hostel_details.pdf`.replace(/\s+/g, '_');
+    const fileName = `${user.firstName}_${user.surname}_registration_details.pdf`.replace(/\s+/g, '_');
     doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);

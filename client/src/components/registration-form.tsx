@@ -155,8 +155,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         <Card className="shadow-lg">
           <CardContent className="p-8">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Student Registration</h2>
-              <p className="text-muted-foreground">Complete your hostel registration and get your room assignment</p>
+              <h2 className="text-3xl font-bold text-foreground mb-2">User Registration</h2>
+              <p className="text-muted-foreground">Complete your registration and get your room assignment</p>
             </div>
 
             <Form {...form}>

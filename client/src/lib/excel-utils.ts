@@ -130,7 +130,7 @@ export function exportUsersToExcel(users: any[]): void {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
     
-    const fileName = `students_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   } catch (error) {
     console.error('Error exporting to Excel:', error);

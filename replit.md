@@ -1,8 +1,8 @@
-# University Hostel Management System
+# REGISTRATION MANAGEMENT SYSTEM
 
 ## Overview
 
-This is a full-stack university hostel management system built with React, Express, and Firebase. The application handles student registration, room assignment, and administrative management for university hostel accommodation. Students can register and automatically receive room and tag number assignments based on their gender and availability, while administrators can manage the entire system through a comprehensive dashboard.
+This is a full-stack registration management system built with React, Express, and Firebase. The application handles user registration, room assignment, and administrative management for accommodation. Users can register and automatically receive room and tag number assignments based on their gender and availability, while administrators can manage the entire system through a comprehensive dashboard.
 
 ## User Preferences
 

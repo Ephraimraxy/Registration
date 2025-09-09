@@ -19,7 +19,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Building className="h-8 w-8 text-primary" />
-              <h1 className="text-xl font-semibold text-foreground">University Hostel Management</h1>
+              <h1 className="text-xl font-semibold text-foreground">REGISTRATION MANAGEMENT SYSTEM</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Button
@@ -28,7 +28,7 @@ export default function Home() {
                 data-testid="button-show-registration"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Register Student
+                Register User
               </Button>
               <Button
                 variant={activeView === 'admin' ? 'default' : 'secondary'}

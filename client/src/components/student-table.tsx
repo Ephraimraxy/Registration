@@ -70,14 +70,14 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
       await deleteDoc(doc(db, "users", user.id));
       
       toast({
-        title: "Student Deleted",
-        description: "Student record has been deleted successfully.",
+        title: "User Deleted",
+        description: "User record has been deleted successfully.",
       });
     } catch (error: any) {
       console.error("Error deleting student:", error);
       toast({
         title: "Delete Failed",
-        description: error.message || "Failed to delete student. Please try again.",
+        description: error.message || "Failed to delete user. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -102,11 +102,11 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Registered Students</CardTitle>
+          <CardTitle>Registered Users</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No students registered yet.</p>
+            <p className="text-muted-foreground">No users registered yet.</p>
           </div>
         </CardContent>
       </Card>
@@ -124,7 +124,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
             <thead className="bg-muted">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Student
+                  User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Gender
@@ -216,10 +216,10 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
                               <AlertDialogDescription>
                                 Are you sure you want to delete {fullName}? This action cannot be undone.
-                                The student's room and tag will be made available for reassignment.
+                                The user's room and tag will be made available for reassignment.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

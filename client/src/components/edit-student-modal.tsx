@@ -67,8 +67,8 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
       });
 
       toast({
-        title: "Student Updated",
-        description: "Student information has been updated successfully.",
+        title: "User Updated",
+        description: "User information has been updated successfully.",
       });
 
       onClose();
@@ -76,7 +76,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
       console.error("Error updating student:", error);
       toast({
         title: "Update Failed",
-        description: error.message || "Failed to update student. Please try again.",
+        description: error.message || "Failed to update user. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -89,7 +89,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Edit Student Information</DialogTitle>
+            <DialogTitle>Edit User Information</DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-edit">
               <X className="h-4 w-4" />
             </Button>
@@ -97,7 +97,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="form-edit-student">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="form-edit-user">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}

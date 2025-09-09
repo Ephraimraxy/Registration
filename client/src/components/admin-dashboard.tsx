@@ -32,9 +32,9 @@ export function AdminDashboard() {
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
-  const [wingFilter, setWingFilter] = useState("");
-  const [stateFilter, setStateFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [wingFilter, setWingFilter] = useState("all");
+  const [stateFilter, setStateFilter] = useState("all");
   
   const { toast } = useToast();
 
@@ -109,15 +109,15 @@ export function AdminDashboard() {
       );
     }
 
-    if (genderFilter) {
+    if (genderFilter && genderFilter !== "all") {
       filtered = filtered.filter(user => user.gender === genderFilter);
     }
 
-    if (wingFilter) {
+    if (wingFilter && wingFilter !== "all") {
       filtered = filtered.filter(user => user.roomNumber?.startsWith(wingFilter));
     }
 
-    if (stateFilter) {
+    if (stateFilter && stateFilter !== "all") {
       filtered = filtered.filter(user => user.stateOfOrigin === stateFilter);
     }
 
@@ -151,9 +151,9 @@ export function AdminDashboard() {
 
   const resetFilters = () => {
     setSearchQuery("");
-    setGenderFilter("");
-    setWingFilter("");
-    setStateFilter("");
+    setGenderFilter("all");
+    setWingFilter("all");
+    setStateFilter("all");
   };
 
   const uniqueStates = Array.from(new Set(users.map(user => user.stateOfOrigin))).sort();
@@ -287,7 +287,7 @@ export function AdminDashboard() {
                 <SelectValue placeholder="All Genders" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Genders</SelectItem>
+                <SelectItem value="all">All Genders</SelectItem>
                 <SelectItem value="Male">Male</SelectItem>
                 <SelectItem value="Female">Female</SelectItem>
               </SelectContent>
@@ -298,7 +298,7 @@ export function AdminDashboard() {
                 <SelectValue placeholder="All Wings" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Wings</SelectItem>
+                <SelectItem value="all">All Wings</SelectItem>
                 {uniqueWings.map(wing => (
                   <SelectItem key={wing} value={wing}>Wing {wing}</SelectItem>
                 ))}
@@ -310,7 +310,7 @@ export function AdminDashboard() {
                 <SelectValue placeholder="All States" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All States</SelectItem>
+                <SelectItem value="all">All States</SelectItem>
                 {uniqueStates.map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
@@ -318,7 +318,7 @@ export function AdminDashboard() {
             </Select>
           </div>
           
-          {(searchQuery || genderFilter || wingFilter || stateFilter) && (
+          {(searchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-muted-foreground">Active filters:</span>
               {searchQuery && (
@@ -326,17 +326,17 @@ export function AdminDashboard() {
                   Search: {searchQuery}
                 </Badge>
               )}
-              {genderFilter && (
+              {genderFilter && genderFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
                   Gender: {genderFilter}
                 </Badge>
               )}
-              {wingFilter && (
+              {wingFilter && wingFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
                   Wing: {wingFilter}
                 </Badge>
               )}
-              {stateFilter && (
+              {stateFilter && stateFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
                   State: {stateFilter}
                 </Badge>

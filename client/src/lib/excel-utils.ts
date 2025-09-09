@@ -3,8 +3,8 @@ import { InsertRoom, InsertTag } from '@shared/schema';
 
 export interface ExcelRoom {
   Wing: string;
-  'Room Number': string;
-  Gender: 'Male' | 'Female';
+  'Room Number': string | number;
+  Gender: string;
   'Total Beds': number;
 }
 
@@ -30,18 +30,28 @@ export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
             throw new Error(`Missing required fields in row ${index + 2}`);
           }
           
-          if (row.Gender !== 'Male' && row.Gender !== 'Female') {
-            throw new Error(`Invalid gender "${row.Gender}" in row ${index + 2}. Must be "Male" or "Female"`);
+          // Normalize gender to proper case
+          const normalizedGender = row.Gender.toString().toLowerCase();
+          if (normalizedGender !== 'male' && normalizedGender !== 'female') {
+            throw new Error(`Invalid gender "${row.Gender}" in row ${index + 2}. Must be "Male", "Female", "male", or "female"`);
           }
           
           if (typeof row['Total Beds'] !== 'number' || row['Total Beds'] <= 0) {
             throw new Error(`Invalid total beds "${row['Total Beds']}" in row ${index + 2}. Must be a positive number`);
           }
           
+          // Create room number by combining wing and number
+          const wing = row.Wing.toString().trim();
+          const roomNum = row['Room Number'].toString().trim();
+          const roomNumber = `${wing}${roomNum}`;
+          
+          // Normalize gender to proper case
+          const gender = normalizedGender === 'male' ? 'Male' : 'Female';
+          
           return {
-            wing: row.Wing.toString().trim(),
-            roomNumber: row['Room Number'].toString().trim(),
-            gender: row.Gender,
+            wing: wing,
+            roomNumber: roomNumber,
+            gender: gender as 'Male' | 'Female',
             totalBeds: row['Total Beds'],
             availableBeds: row['Total Beds'], // Initially all beds are available
           };

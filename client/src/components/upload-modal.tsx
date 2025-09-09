@@ -170,7 +170,8 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
             {type === 'rooms' ? (
               <div className="text-sm text-muted-foreground space-y-1">
                 <p><strong>Columns:</strong> Wing, Room Number, Gender, Total Beds</p>
-                <p><strong>Example:</strong> A, A101, Male, 4</p>
+                <p><strong>Example:</strong> A, 254, female, 4</p>
+                <p><strong>Note:</strong> Wing can be any string (A, EVE, etc.), Room Number is just a number, Gender accepts male/female or Male/Female</p>
               </div>
             ) : (
               <div className="text-sm text-muted-foreground space-y-1">

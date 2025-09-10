@@ -290,10 +290,6 @@ export function AdminDashboard() {
               <Download className="mr-2 h-4 w-4" />
               Export Users
             </Button>
-            <Button variant="secondary" onClick={refreshStats} data-testid="button-refresh-stats">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Refresh Stats
-            </Button>
           </div>
         </CardContent>
       </Card>

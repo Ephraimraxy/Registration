@@ -25,9 +25,6 @@ export default function Home() {
                 <h1 className="text-2xl font-bold text-white drop-shadow-lg">
                   🎓 REGISTRATION MANAGEMENT SYSTEM
                 </h1>
-                <p className="text-blue-100 text-sm font-medium">
-                  Student Accommodation & Tag Management
-                </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">

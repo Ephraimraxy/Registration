@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { User } from "@shared/schema";
 import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, updateAdminStats } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 interface StudentTableProps {
@@ -87,6 +87,14 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
       });
       
       setDeleteStatus('success');
+      
+      // Update admin stats after successful deletion
+      try {
+        await updateAdminStats();
+      } catch (statsError) {
+        console.error("Failed to update admin stats:", statsError);
+      }
+      
       toast({
         title: "User Deleted",
         description: "User record has been deleted successfully.",

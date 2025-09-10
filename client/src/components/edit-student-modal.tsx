@@ -83,25 +83,25 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
             }
           }
 
-          // Find new room for the new gender
+          // Find new room for the new gender (using single field query to avoid composite index)
           const roomsQuery = query(
             collection(db, "rooms"),
-            where("gender", "==", data.gender),
-            where("availableBeds", ">", 0)
+            where("gender", "==", data.gender)
           );
           const roomsSnapshot = await getDocs(roomsQuery);
           
           let newRoomNumber = null;
           if (!roomsSnapshot.empty) {
-            const newRoom = roomsSnapshot.docs[0];
-            const newRoomData = newRoom.data();
-            
-            // Verify room is still available
-            if (newRoomData.availableBeds > 0) {
-              transaction.update(newRoom.ref, {
-                availableBeds: newRoomData.availableBeds - 1,
-              });
-              newRoomNumber = newRoomData.roomNumber;
+            // Find the first room with available beds
+            for (const roomDoc of roomsSnapshot.docs) {
+              const roomData = roomDoc.data();
+              if (roomData.availableBeds > 0) {
+                transaction.update(roomDoc.ref, {
+                  availableBeds: roomData.availableBeds - 1,
+                });
+                newRoomNumber = roomData.roomNumber;
+                break;
+              }
             }
           }
 
@@ -181,7 +181,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-description">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Edit User Information</DialogTitle>
@@ -189,6 +189,9 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
               <X className="h-4 w-4" />
             </Button>
           </div>
+          <p id="edit-description" className="text-sm text-muted-foreground">
+            Update user information and room assignments. Changes will be saved immediately.
+          </p>
         </DialogHeader>
 
         <Form {...form}>

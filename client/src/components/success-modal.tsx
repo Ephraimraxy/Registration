@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle, Download, X, UserPlus, IdCard } from "lucide-react";
+import { CheckCircle, Download, X, UserPlus, IdCard, Eye } from "lucide-react";
 import { generateUserDetailsPDF } from "@/lib/pdf-utils";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
+import { useState } from "react";
+import { CardPreviewPage } from "./card-preview-page";
 
 interface SuccessModalProps {
   user: User;
@@ -14,6 +16,7 @@ interface SuccessModalProps {
 
 export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalProps) {
   const { toast } = useToast();
+  const [showCardPreview, setShowCardPreview] = useState(false);
 
   const handleDownload = () => {
     try {
@@ -40,9 +43,24 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
 
   const fullName = `${user.firstName} ${user.middleName || ''} ${user.surname}`.trim();
 
+  if (showCardPreview) {
+    return (
+      <CardPreviewPage
+        user={user}
+        onBack={() => setShowCardPreview(false)}
+        onPrint={(type) => {
+          toast({
+            title: "Print Ready",
+            description: `Printing ${type === 'full' ? 'full details' : 'summary'} card...`,
+          });
+        }}
+      />
+    );
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" aria-describedby="success-description">
         <div className="text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <CheckCircle className="h-10 w-10 text-white" />
@@ -52,7 +70,7 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
             Registration Successful!
           </h3>
           
-          <p className="text-muted-foreground mb-8">
+          <p id="success-description" className="text-muted-foreground mb-8">
             Your room has been assigned successfully. Here are your details:
           </p>
           
@@ -99,6 +117,15 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
           
           {/* Action Buttons */}
           <div className="space-y-3">
+            <Button 
+              onClick={() => setShowCardPreview(true)}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold"
+              data-testid="button-view-card"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              🎓 View Full ID Card Preview
+            </Button>
+            
             <div className="flex space-x-3">
               <Button 
                 onClick={handleDownload} 

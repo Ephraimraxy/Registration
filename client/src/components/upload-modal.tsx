@@ -9,6 +9,7 @@ import { parseRoomsExcel, parseTagsExcel } from "@/lib/excel-utils";
 import { collection, addDoc, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { UploadProgressPopup } from "./upload-progress-popup";
 
 interface UploadModalProps {
   type: 'rooms' | 'tags';
@@ -23,6 +24,8 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
   const [uploadedCount, setUploadedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [showProgressPopup, setShowProgressPopup] = useState(false);
+  const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -68,6 +71,8 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
     setUploadProgress(10);
     setUploadedCount(0);
     setTotalCount(0);
+    setUploadError('');
+    setShowProgressPopup(true);
 
     try {
       let items: any[] = [];
@@ -157,6 +162,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
     } catch (error: any) {
       console.error("Upload error:", error);
       setUploadStatus('error');
+      setUploadError(error.message || "Failed to upload file. Please check the format and try again.");
       toast({
         title: "Upload Failed",
         description: error.message || "Failed to upload file. Please check the format and try again.",
@@ -445,6 +451,19 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           )}
         </div>
       </DialogContent>
+      
+      {/* Upload Progress Popup */}
+      <UploadProgressPopup
+        isOpen={showProgressPopup}
+        onClose={() => setShowProgressPopup(false)}
+        progress={uploadProgress}
+        status={uploadStatus}
+        uploadedCount={uploadedCount}
+        totalCount={totalCount}
+        currentFile={currentFile}
+        type={type}
+        error={uploadError}
+      />
     </Dialog>
   );
 }

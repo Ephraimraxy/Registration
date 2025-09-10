@@ -447,6 +447,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-60 bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
+                              {NIGERIAN_STATES.map((state, index) => (
                                 <SelectItem 
                                   key={state} 
                                   value={state}

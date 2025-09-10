@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User } from "@shared/schema";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, runTransaction, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { X, Save } from "lucide-react";
@@ -54,21 +54,81 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
 
     setIsUpdating(true);
     try {
-      const userRef = doc(db, "users", user.id);
-      await updateDoc(userRef, {
-        firstName: data.firstName,
-        surname: data.surname,
-        middleName: data.middleName || null,
-        gender: data.gender,
-        phone: data.phone,
-        email: data.email,
-        roomNumber: data.roomNumber || null,
-        tagNumber: data.tagNumber || null,
-      });
+      // Use atomic transaction for room reassignment if gender changed
+      if (data.gender !== user.gender) {
+        await runTransaction(db, async (transaction) => {
+          // Free up old room if user had one
+          if (user.roomNumber) {
+            const oldRoomsQuery = query(
+              collection(db, "rooms"),
+              where("roomNumber", "==", user.roomNumber)
+            );
+            const oldRoomsSnapshot = await getDocs(oldRoomsQuery);
+            
+            if (!oldRoomsSnapshot.empty) {
+              const oldRoomDoc = oldRoomsSnapshot.docs[0];
+              const oldRoomData = oldRoomDoc.data();
+              transaction.update(oldRoomDoc.ref, {
+                availableBeds: oldRoomData.availableBeds + 1,
+              });
+            }
+          }
+
+          // Find new room for the new gender
+          const roomsQuery = query(
+            collection(db, "rooms"),
+            where("gender", "==", data.gender),
+            where("availableBeds", ">", 0)
+          );
+          const roomsSnapshot = await getDocs(roomsQuery);
+          
+          let newRoomNumber = null;
+          if (!roomsSnapshot.empty) {
+            const newRoom = roomsSnapshot.docs[0];
+            const newRoomData = newRoom.data();
+            
+            // Verify room is still available
+            if (newRoomData.availableBeds > 0) {
+              transaction.update(newRoom.ref, {
+                availableBeds: newRoomData.availableBeds - 1,
+              });
+              newRoomNumber = newRoomData.roomNumber;
+            }
+          }
+
+          // Update user with new room assignment
+          const userRef = doc(db, "users", user.id);
+          transaction.update(userRef, {
+            firstName: data.firstName,
+            surname: data.surname,
+            middleName: data.middleName || null,
+            gender: data.gender,
+            phone: data.phone,
+            email: data.email,
+            roomNumber: newRoomNumber,
+            tagNumber: data.tagNumber || user.tagNumber,
+          });
+        });
+      } else {
+        // Simple update if gender didn't change
+        const userRef = doc(db, "users", user.id);
+        await updateDoc(userRef, {
+          firstName: data.firstName,
+          surname: data.surname,
+          middleName: data.middleName || null,
+          gender: data.gender,
+          phone: data.phone,
+          email: data.email,
+          roomNumber: data.roomNumber || user.roomNumber,
+          tagNumber: data.tagNumber || user.tagNumber,
+        });
+      }
 
       toast({
         title: "User Updated",
-        description: "User information has been updated successfully.",
+        description: data.gender !== user.gender 
+          ? "User information and room assignment have been updated successfully."
+          : "User information has been updated successfully.",
       });
 
       onClose();

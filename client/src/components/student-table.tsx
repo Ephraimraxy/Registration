@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { User } from "@shared/schema";
-import { doc, deleteDoc, updateDoc, query, where, collection, getDocs } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,42 +32,45 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
     
     setDeletingUserId(user.id);
     try {
-      // Free up the room bed
-      if (user.roomNumber) {
-        const roomsQuery = query(
-          collection(db, "rooms"),
-          where("roomNumber", "==", user.roomNumber)
-        );
-        const roomsSnapshot = await getDocs(roomsQuery);
-        
-        if (!roomsSnapshot.empty) {
-          const roomDoc = roomsSnapshot.docs[0];
-          const roomData = roomDoc.data();
-          await updateDoc(roomDoc.ref, {
-            availableBeds: roomData.availableBeds + 1,
-          });
+      // Use atomic transaction to ensure consistency
+      await runTransaction(db, async (transaction) => {
+        // Free up the room bed
+        if (user.roomNumber) {
+          const roomsQuery = query(
+            collection(db, "rooms"),
+            where("roomNumber", "==", user.roomNumber)
+          );
+          const roomsSnapshot = await getDocs(roomsQuery);
+          
+          if (!roomsSnapshot.empty) {
+            const roomDoc = roomsSnapshot.docs[0];
+            const roomData = roomDoc.data();
+            transaction.update(roomDoc.ref, {
+              availableBeds: roomData.availableBeds + 1,
+            });
+          }
         }
-      }
 
-      // Free up the tag
-      if (user.tagNumber) {
-        const tagsQuery = query(
-          collection(db, "tags"),
-          where("tagNumber", "==", user.tagNumber)
-        );
-        const tagsSnapshot = await getDocs(tagsQuery);
-        
-        if (!tagsSnapshot.empty) {
-          const tagDoc = tagsSnapshot.docs[0];
-          await updateDoc(tagDoc.ref, {
-            isAssigned: false,
-            assignedUserId: null,
-          });
+        // Free up the tag
+        if (user.tagNumber) {
+          const tagsQuery = query(
+            collection(db, "tags"),
+            where("tagNumber", "==", user.tagNumber)
+          );
+          const tagsSnapshot = await getDocs(tagsQuery);
+          
+          if (!tagsSnapshot.empty) {
+            const tagDoc = tagsSnapshot.docs[0];
+            transaction.update(tagDoc.ref, {
+              isAssigned: false,
+              assignedUserId: null,
+            });
+          }
         }
-      }
 
-      // Delete the user
-      await deleteDoc(doc(db, "users", user.id));
+        // Delete the user
+        transaction.delete(doc(db, "users", user.id));
+      });
       
       toast({
         title: "User Deleted",
@@ -86,7 +89,9 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
   };
 
   const getInitials = (firstName: string, surname: string) => {
-    return `${firstName.charAt(0)}${surname.charAt(0)}`.toUpperCase();
+    const first = firstName?.charAt(0) || '';
+    const last = surname?.charAt(0) || '';
+    return `${first}${last}`.toUpperCase();
   };
 
   const getAvatarColor = (name: string) => {

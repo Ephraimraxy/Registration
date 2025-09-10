@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { CloudUpload, X, FileSpreadsheet } from "lucide-react";
 import { parseRoomsExcel, parseTagsExcel } from "@/lib/excel-utils";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -73,9 +73,13 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           }
         }
         
-        // Add rooms to Firestore
-        const batch = rooms.map(room => addDoc(collection(db, "rooms"), room));
-        await Promise.all(batch);
+        // Use batch write for atomic operation
+        const batch = writeBatch(db);
+        rooms.forEach(room => {
+          const roomRef = doc(collection(db, "rooms"));
+          batch.set(roomRef, room);
+        });
+        await batch.commit();
         
         toast({
           title: "Rooms Uploaded Successfully",
@@ -97,9 +101,13 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           }
         }
         
-        // Add tags to Firestore
-        const batch = tags.map(tag => addDoc(collection(db, "tags"), tag));
-        await Promise.all(batch);
+        // Use batch write for atomic operation
+        const batch = writeBatch(db);
+        tags.forEach(tag => {
+          const tagRef = doc(collection(db, "tags"));
+          batch.set(tagRef, tag);
+        });
+        await batch.commit();
         
         toast({
           title: "Tags Uploaded Successfully",

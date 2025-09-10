@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin } from "lucide-react";
-import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
+import { db, validateRegistrationData, updateAdminStats } from "@/lib/firebase";
 import { SuccessModal } from "./success-modal";
 
 const NIGERIAN_STATES = [
@@ -46,90 +46,110 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     },
   });
 
-  const assignRoomAndTag = async (gender: "Male" | "Female") => {
-    try {
-      // Find available room for the gender
-      const roomsQuery = query(
-        collection(db, "rooms"),
-        where("gender", "==", gender),
-        where("availableBeds", ">", 0)
-      );
-      const roomsSnapshot = await getDocs(roomsQuery);
-      
-      if (roomsSnapshot.empty) {
-        throw new Error(`No available rooms for ${gender} students`);
-      }
-      
-      const availableRoom = roomsSnapshot.docs[0];
-      const roomData = availableRoom.data();
-      
-      // Find available tag
-      const tagsQuery = query(
-        collection(db, "tags"),
-        where("isAssigned", "==", false)
-      );
-      const tagsSnapshot = await getDocs(tagsQuery);
-      
-      if (tagsSnapshot.empty) {
-        throw new Error("No available tags");
-      }
-      
-      const availableTag = tagsSnapshot.docs[0];
-      const tagData = availableTag.data();
-      
-      return {
-        roomNumber: roomData.roomNumber,
-        tagNumber: tagData.tagNumber,
-        roomId: availableRoom.id,
-        tagId: availableTag.id,
-        availableBeds: roomData.availableBeds,
-      };
-    } catch (error) {
-      console.error("Error assigning room and tag:", error);
-      throw error;
-    }
-  };
-
   const onSubmit = async (data: InsertUser) => {
     setIsSubmitting(true);
     try {
-      // Assign room and tag
-      const assignment = await assignRoomAndTag(data.gender);
-      
-      // Create user data with assignment
-      const userData = {
-        ...data,
-        roomNumber: assignment.roomNumber,
-        tagNumber: assignment.tagNumber,
-        createdAt: Timestamp.now(),
-      };
-      
-      // Add user to Firestore
-      const userRef = await addDoc(collection(db, "users"), userData);
-      
-      // Update room availability
-      const roomRef = doc(db, "rooms", assignment.roomId);
-      await updateDoc(roomRef, {
-        availableBeds: assignment.availableBeds - 1,
-      });
-      
-      // Mark tag as assigned
-      const tagRef = doc(db, "tags", assignment.tagId);
-      await updateDoc(tagRef, {
-        isAssigned: true,
-        assignedUserId: userRef.id,
+      // Enhanced validation before processing
+      const validation = validateRegistrationData(data);
+      if (!validation.isValid) {
+        toast({
+          title: "Validation Error",
+          description: validation.errors.join(", "),
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Use atomic transaction to prevent race conditions
+      const result = await runTransaction(db, async (transaction) => {
+        // Find available room for the gender
+        const roomsQuery = query(
+          collection(db, "rooms"),
+          where("gender", "==", data.gender),
+          where("availableBeds", ">", 0)
+        );
+        const roomsSnapshot = await getDocs(roomsQuery);
+        
+        if (roomsSnapshot.empty) {
+          throw new Error(`No available rooms for ${data.gender} students`);
+        }
+        
+        const availableRoom = roomsSnapshot.docs[0];
+        const roomData = availableRoom.data();
+        
+        // Verify room is still available within transaction
+        if (roomData.availableBeds <= 0) {
+          throw new Error(`Room ${roomData.roomNumber} is no longer available`);
+        }
+        
+        // Find available tag
+        const tagsQuery = query(
+          collection(db, "tags"),
+          where("isAssigned", "==", false)
+        );
+        const tagsSnapshot = await getDocs(tagsQuery);
+        
+        if (tagsSnapshot.empty) {
+          throw new Error("No available tags");
+        }
+        
+        const availableTag = tagsSnapshot.docs[0];
+        const tagData = availableTag.data();
+        
+        // Verify tag is still available within transaction
+        if (tagData.isAssigned) {
+          throw new Error(`Tag ${tagData.tagNumber} is no longer available`);
+        }
+        
+        // Create user data with assignment
+        const userData = {
+          ...data,
+          roomNumber: roomData.roomNumber,
+          tagNumber: tagData.tagNumber,
+          createdAt: Timestamp.now(),
+        };
+        
+        // Create user document reference
+        const userRef = doc(collection(db, "users"));
+        const roomRef = doc(db, "rooms", availableRoom.id);
+        const tagRef = doc(db, "tags", availableTag.id);
+        
+        // Add all operations to transaction
+        transaction.set(userRef, userData);
+        transaction.update(roomRef, {
+          availableBeds: roomData.availableBeds - 1,
+        });
+        transaction.update(tagRef, {
+          isAssigned: true,
+          assignedUserId: userRef.id,
+        });
+        
+        return {
+          userRef,
+          userData,
+          roomNumber: roomData.roomNumber,
+          tagNumber: tagData.tagNumber,
+        };
       });
       
       // Create user object for success modal
       const newUser = {
-        id: userRef.id,
-        ...userData,
-        createdAt: userData.createdAt.toDate(),
+        id: result.userRef.id,
+        ...result.userData,
+        createdAt: result.userData.createdAt.toDate(),
       };
       
       setRegisteredUser(newUser);
       setShowSuccess(true);
       onSuccess(newUser);
+      
+      // Update admin stats in real-time
+      try {
+        await updateAdminStats();
+      } catch (error) {
+        console.error("Failed to update admin stats:", error);
+      }
       
       toast({
         title: "Registration Successful",
@@ -346,6 +366,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         <SuccessModal
           user={registeredUser}
           onClose={() => setShowSuccess(false)}
+          onNewRegistration={() => {
+            setShowSuccess(false);
+            form.reset();
+          }}
         />
       )}
     </>

@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Users, Bed, Tag, Upload, Download, BarChart3 } from "lucide-react";
-import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where, orderBy, doc } from "firebase/firestore";
+import { db, updateAdminStats } from "@/lib/firebase";
 import { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
@@ -74,26 +74,46 @@ export function AdminDashboard() {
       }
     );
 
+    // Real-time admin stats listener
+    const unsubscribeAdminStats = onSnapshot(
+      doc(db, "admin", "stats"),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const adminData = snapshot.data();
+          setStats({
+            totalStudents: adminData.totalStudents || 0,
+            availableRooms: adminData.availableRooms || 0,
+            assignedTags: adminData.assignedTags || 0,
+            availableTags: adminData.availableTags || 0,
+          });
+        }
+      }
+    );
+
     return () => {
       unsubscribeUsers();
       unsubscribeRooms();
       unsubscribeTags();
+      unsubscribeAdminStats();
     };
   }, []);
 
-  // Calculate stats
-  useEffect(() => {
-    const availableRooms = rooms.filter(room => room.availableBeds > 0).length;
-    const assignedTags = tags.filter(tag => tag.isAssigned).length;
-    const availableTags = tags.filter(tag => !tag.isAssigned).length;
-
-    setStats({
-      totalStudents: users.length,
-      availableRooms,
-      assignedTags,
-      availableTags,
-    });
-  }, [users, rooms, tags]);
+  // Manual stats refresh function
+  const refreshStats = async () => {
+    try {
+      await updateAdminStats();
+      toast({
+        title: "Stats Updated",
+        description: "Admin statistics have been refreshed successfully!",
+      });
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to refresh admin statistics.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Apply filters
   useEffect(() => {
@@ -156,8 +176,8 @@ export function AdminDashboard() {
     setStateFilter("all");
   };
 
-  const uniqueStates = Array.from(new Set(users.map(user => user.stateOfOrigin))).sort();
-  const uniqueWings = Array.from(new Set(rooms.map(room => room.wing))).sort();
+  const uniqueStates = Array.from(new Set(users?.map(user => user.stateOfOrigin).filter(Boolean) ?? [])).sort();
+  const uniqueWings = Array.from(new Set(rooms?.map(room => room.wing).filter(Boolean) ?? [])).sort();
 
   return (
     <div className="space-y-8">
@@ -253,9 +273,9 @@ export function AdminDashboard() {
               <Download className="mr-2 h-4 w-4" />
               Export Users
             </Button>
-            <Button variant="secondary" data-testid="button-generate-reports">
+            <Button variant="secondary" onClick={refreshStats} data-testid="button-refresh-stats">
               <BarChart3 className="mr-2 h-4 w-4" />
-              Generate Reports
+              Refresh Stats
             </Button>
           </div>
         </CardContent>
@@ -299,7 +319,7 @@ export function AdminDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Wings</SelectItem>
-                {uniqueWings.map(wing => (
+                {uniqueWings?.filter(Boolean).map(wing => (
                   <SelectItem key={wing} value={wing}>Wing {wing}</SelectItem>
                 ))}
               </SelectContent>
@@ -311,7 +331,7 @@ export function AdminDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All States</SelectItem>
-                {uniqueStates.map(state => (
+                {uniqueStates?.filter(Boolean).map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
               </SelectContent>
@@ -322,22 +342,22 @@ export function AdminDashboard() {
             <div className="flex items-center gap-2 mt-4">
               <span className="text-sm text-muted-foreground">Active filters:</span>
               {searchQuery && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge key="search" variant="secondary" className="text-xs">
                   Search: {searchQuery}
                 </Badge>
               )}
               {genderFilter && genderFilter !== "all" && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge key="gender" variant="secondary" className="text-xs">
                   Gender: {genderFilter}
                 </Badge>
               )}
               {wingFilter && wingFilter !== "all" && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge key="wing" variant="secondary" className="text-xs">
                   Wing: {wingFilter}
                 </Badge>
               )}
               {stateFilter && stateFilter !== "all" && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge key="state" variant="secondary" className="text-xs">
                   State: {stateFilter}
                 </Badge>
               )}

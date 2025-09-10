@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Users, Bed, Tag, Upload, Download, BarChart3 } from "lucide-react";
+import { Users, Bed, Tag, Upload, Download, BarChart3, Building } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";
+import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,6 +30,7 @@ export function AdminDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showDetailedView, setShowDetailedView] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -274,6 +276,10 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
+            <Button onClick={() => setShowDetailedView(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Building className="mr-2 h-4 w-4" />
+              🏠 View Rooms & Tags Details
+            </Button>
             <Button onClick={() => handleUpload('rooms')} data-testid="button-upload-rooms">
               <Upload className="mr-2 h-4 w-4" />
               Upload Rooms (Excel)
@@ -397,6 +403,12 @@ export function AdminDashboard() {
         <EditStudentModal
           user={editingUser}
           onClose={() => setEditingUser(null)}
+        />
+      )}
+
+      {showDetailedView && (
+        <RoomsTagsDetailPage
+          onBack={() => setShowDetailedView(false)}
         />
       )}
     </div>

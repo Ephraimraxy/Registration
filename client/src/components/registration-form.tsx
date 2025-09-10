@@ -13,6 +13,7 @@ import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucid
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
 import { db, validateRegistrationData, updateAdminStats } from "@/lib/firebase";
 import { SuccessModal } from "./success-modal";
+import { safeAssignRoomAndTag, validateAvailability } from "@/lib/concurrency-utils";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -71,9 +72,41 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<any>(null);
   const [registrationProgress, setRegistrationProgress] = useState(0);
-  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'validating' | 'finding-room' | 'finding-tag' | 'creating-user' | 'success' | 'error'>('idle');
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'validating' | 'checking-availability' | 'finding-room' | 'finding-tag' | 'creating-user' | 'success' | 'error'>('idle');
   const [selectedState, setSelectedState] = useState<string>("");
+  const [availabilityStatus, setAvailabilityStatus] = useState<{
+    hasAvailableRooms: boolean;
+    hasAvailableTags: boolean;
+    availableRoomCount: number;
+    availableTagCount: number;
+  } | null>(null);
   const { toast } = useToast();
+
+  // Check availability when gender changes
+  const checkAvailability = async (gender: string) => {
+    if (!gender) return;
+    
+    try {
+      const availability = await validateAvailability(gender);
+      setAvailabilityStatus(availability);
+      
+      if (!availability.hasAvailableRooms) {
+        toast({
+          title: "No Available Rooms",
+          description: `No rooms available for ${gender} students at the moment.`,
+          variant: "destructive",
+        });
+      } else if (!availability.hasAvailableTags) {
+        toast({
+          title: "No Available Tags",
+          description: "No tags available at the moment.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error checking availability:", error);
+    }
+  };
 
   const form = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
@@ -336,7 +369,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Gender</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            checkAvailability(value);
+                          }} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-gender">
                                 <SelectValue placeholder="Select gender" />
@@ -489,12 +525,46 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                   </div>
                 </div>
 
+                {/* Availability Status */}
+                {availabilityStatus && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
+                      📊 Availability Status
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div>
+                          <div className="font-semibold text-gray-800 dark:text-gray-200">
+                            {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '❌ No Rooms'}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {availabilityStatus.availableRoomCount} beds available
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div>
+                          <div className="font-semibold text-gray-800 dark:text-gray-200">
+                            {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '❌ No Tags'}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {availabilityStatus.availableTagCount} tags available
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Progress Display */}
                 {isSubmitting && (
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {registrationStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                        {registrationStatus === 'checking-availability' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
                         {registrationStatus === 'finding-room' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
                         {registrationStatus === 'finding-tag' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
                         {registrationStatus === 'creating-user' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
@@ -502,6 +572,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         {registrationStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
                         <span className="text-sm font-medium">
                           {registrationStatus === 'validating' && 'Validating data...'}
+                          {registrationStatus === 'checking-availability' && 'Checking availability...'}
                           {registrationStatus === 'finding-room' && 'Finding available room...'}
                           {registrationStatus === 'finding-tag' && 'Finding available tag...'}
                           {registrationStatus === 'creating-user' && 'Creating user account...'}

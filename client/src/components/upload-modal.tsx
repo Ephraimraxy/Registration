@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CloudUpload, X, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { parseRoomsExcel, parseTagsExcel } from "@/lib/excel-utils";
 import { collection, addDoc, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
-import { db, updateAdminStats } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { UploadProgressPopup } from "./upload-progress-popup";
 
@@ -148,13 +148,6 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       
       setUploadProgress(100);
       setUploadStatus('success');
-      
-      // Update admin stats after successful upload
-      try {
-        await updateAdminStats();
-      } catch (statsError) {
-        console.error("Failed to update admin stats:", statsError);
-      }
       
       toast({
         title: `${type === 'rooms' ? 'Rooms' : 'Tags'} Uploaded Successfully`,

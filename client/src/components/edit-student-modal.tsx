@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { User } from "@shared/schema";
 import { doc, updateDoc, runTransaction, collection, query, where, getDocs } from "firebase/firestore";
-import { db, updateAdminStats } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { X, Save, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
@@ -145,13 +145,6 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
       
       setUpdateProgress(100);
       setUpdateStatus('success');
-
-      // Update admin stats after successful update
-      try {
-        await updateAdminStats();
-      } catch (statsError) {
-        console.error("Failed to update admin stats:", statsError);
-      }
 
       toast({
         title: "User Updated",

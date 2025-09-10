@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Users, Bed, Tag, Upload, Download, BarChart3 } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc } from "firebase/firestore";
-import { db, updateAdminStats } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
@@ -49,6 +49,7 @@ export function AdminDashboard() {
           createdAt: doc.data().createdAt?.toDate() || new Date(),
         })) as User[];
         setUsers(userData);
+        console.log("Users updated:", userData.length, "users");
       }
     );
 
@@ -60,6 +61,7 @@ export function AdminDashboard() {
           ...doc.data(),
         })) as Room[];
         setRooms(roomData);
+        console.log("Rooms updated:", roomData.length, "rooms");
       }
     );
 
@@ -71,24 +73,7 @@ export function AdminDashboard() {
           ...doc.data(),
         })) as TagType[];
         setTags(tagData);
-      }
-    );
-
-    // Real-time admin stats listener
-    const unsubscribeAdminStats = onSnapshot(
-      doc(db, "admin", "stats"),
-      (snapshot) => {
-        console.log("Admin stats listener triggered:", snapshot.exists());
-        if (snapshot.exists()) {
-          const adminData = snapshot.data();
-          console.log("Admin stats data received:", adminData);
-          setStats({
-            totalStudents: adminData.totalStudents || 0,
-            availableRooms: adminData.availableRooms || 0,
-            assignedTags: adminData.assignedTags || 0,
-            availableTags: adminData.availableTags || 0,
-          });
-        }
+        console.log("Tags updated:", tagData.length, "tags");
       }
     );
 
@@ -96,26 +81,22 @@ export function AdminDashboard() {
       unsubscribeUsers();
       unsubscribeRooms();
       unsubscribeTags();
-      unsubscribeAdminStats();
     };
   }, []);
 
-  // Manual stats refresh function
-  const refreshStats = async () => {
-    try {
-      await updateAdminStats();
-      toast({
-        title: "Stats Updated",
-        description: "Admin statistics have been refreshed successfully!",
-      });
-    } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: "Failed to refresh admin statistics.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Calculate stats directly from real-time data
+  useEffect(() => {
+    console.log("Calculating stats from real-time data...");
+    const calculatedStats = {
+      totalStudents: users.length,
+      availableRooms: rooms.filter(room => room.availableBeds > 0).length,
+      assignedTags: tags.filter(tag => tag.isAssigned).length,
+      availableTags: tags.filter(tag => !tag.isAssigned).length,
+    };
+    
+    console.log("Real-time calculated stats:", calculatedStats);
+    setStats(calculatedStats);
+  }, [users, rooms, tags]);
 
   // Apply filters
   useEffect(() => {

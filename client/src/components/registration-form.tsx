@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
-import { db, validateRegistrationData, updateAdminStats } from "@/lib/firebase";
+import { db, validateRegistrationData } from "@/lib/firebase";
 import { safeAssignRoomAndTag, validateAvailability } from "@/lib/concurrency-utils";
 
 const NIGERIAN_STATES = [
@@ -243,13 +243,6 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       };
       
       onSuccess(newUser);
-      
-      // Update admin stats in real-time
-      try {
-        await updateAdminStats();
-      } catch (error) {
-        console.error("Failed to update admin stats:", error);
-      }
       
       toast({
         title: "Registration Successful",

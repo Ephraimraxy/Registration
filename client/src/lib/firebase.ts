@@ -136,6 +136,7 @@ export const validateRegistrationData = (data: any) => {
 // Real-time admin stats update
 export const updateAdminStats = async () => {
   try {
+    console.log("Starting admin stats update...");
     const [usersSnapshot, roomsSnapshot, tagsSnapshot] = await Promise.all([
       getDocs(collection(db, "users")),
       getDocs(collection(db, "rooms")),
@@ -149,12 +150,15 @@ export const updateAdminStats = async () => {
       availableTags: tagsSnapshot.docs.filter(doc => !doc.data().isAssigned).length,
     };
     
+    console.log("Calculated stats:", stats);
+    
     const adminRef = doc(db, "admin", "stats");
     await setDoc(adminRef, {
       ...stats,
       lastUpdated: Timestamp.now(),
     }, { merge: true });
     
+    console.log("Admin stats document updated successfully");
     return stats;
   } catch (error) {
     console.error("Error updating admin stats:", error);

@@ -78,8 +78,10 @@ export function AdminDashboard() {
     const unsubscribeAdminStats = onSnapshot(
       doc(db, "admin", "stats"),
       (snapshot) => {
+        console.log("Admin stats listener triggered:", snapshot.exists());
         if (snapshot.exists()) {
           const adminData = snapshot.data();
+          console.log("Admin stats data received:", adminData);
           setStats({
             totalStudents: adminData.totalStudents || 0,
             availableRooms: adminData.availableRooms || 0,

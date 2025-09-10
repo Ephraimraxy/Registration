@@ -90,7 +90,11 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
       
       // Update admin stats after successful deletion
       try {
-        await updateAdminStats();
+        console.log("Updating admin stats after deletion...");
+        // Add a small delay to ensure transaction is fully committed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const updatedStats = await updateAdminStats();
+        console.log("Admin stats updated successfully:", updatedStats);
       } catch (statsError) {
         console.error("Failed to update admin stats:", statsError);
       }

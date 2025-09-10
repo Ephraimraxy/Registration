@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { User } from '@shared/schema';
+import type { User } from '@shared/schema';
 
 export function generateUserDetailsPDF(user: User): void {
   try {

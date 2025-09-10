@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Room, Tag as TagType, User as UserType } from "@shared/schema";
+import type { Room, Tag as TagType, User as UserType } from "@shared/schema";
 
 interface RoomsTagsDetailPageProps {
   onBack: () => void;

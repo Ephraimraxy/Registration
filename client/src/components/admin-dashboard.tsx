@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Bed, Tag, Upload, Download, BarChart3, Building } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { User, Room, Tag as TagType, Stats } from "@shared/schema";
+import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";

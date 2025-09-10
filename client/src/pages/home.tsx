@@ -4,7 +4,7 @@ import { Building, UserPlus, Settings } from "lucide-react";
 import { RegistrationForm } from "@/components/registration-form";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { RegistrationSuccessPage } from "@/components/registration-success-page";
-import { User } from "@shared/schema";
+import type { User } from "@shared/schema";
 
 export default function Home() {
   const [activeView, setActiveView] = useState<'registration' | 'admin' | 'success'>('registration');

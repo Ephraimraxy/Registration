@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { User } from "@shared/schema";
 import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -20,6 +21,8 @@ const ITEMS_PER_PAGE = 10;
 export function StudentTable({ users, onEdit }: StudentTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deleteProgress, setDeleteProgress] = useState(0);
+  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
   const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
@@ -31,11 +34,17 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
     if (!user.id) return;
     
     setDeletingUserId(user.id);
+    setDeleteStatus('processing');
+    setDeleteProgress(0);
+    
     try {
       // Use atomic transaction to ensure consistency
       await runTransaction(db, async (transaction) => {
+        setDeleteProgress(20);
+        
         // Free up the room bed
         if (user.roomNumber) {
+          setDeleteProgress(40);
           const roomsQuery = query(
             collection(db, "rooms"),
             where("roomNumber", "==", user.roomNumber)
@@ -49,10 +58,12 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
               availableBeds: roomData.availableBeds + 1,
             });
           }
+          setDeleteProgress(60);
         }
 
         // Free up the tag
         if (user.tagNumber) {
+          setDeleteProgress(70);
           const tagsQuery = query(
             collection(db, "tags"),
             where("tagNumber", "==", user.tagNumber)
@@ -66,23 +77,40 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
               assignedUserId: null,
             });
           }
+          setDeleteProgress(85);
         }
 
         // Delete the user
+        setDeleteProgress(90);
         transaction.delete(doc(db, "users", user.id));
+        setDeleteProgress(100);
       });
       
+      setDeleteStatus('success');
       toast({
         title: "User Deleted",
         description: "User record has been deleted successfully.",
       });
+      
+      // Reset after success
+      setTimeout(() => {
+        setDeleteStatus('idle');
+        setDeleteProgress(0);
+      }, 2000);
     } catch (error: any) {
       console.error("Error deleting student:", error);
+      setDeleteStatus('error');
       toast({
         title: "Delete Failed",
         description: error.message || "Failed to delete user. Please try again.",
         variant: "destructive",
       });
+      
+      // Reset after error
+      setTimeout(() => {
+        setDeleteStatus('idle');
+        setDeleteProgress(0);
+      }, 3000);
     } finally {
       setDeletingUserId(null);
     }
@@ -216,7 +244,11 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                               disabled={deletingUserId === user.id}
                               data-testid={`button-delete-${user.id}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -227,13 +259,44 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                                 The user's room and tag will be made available for reassignment.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
+                            
+                            {/* Progress Display */}
+                            {deletingUserId === user.id && (
+                              <div className="space-y-3 py-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {deleteStatus === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                                    {deleteStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                    {deleteStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                                    <span className="text-sm font-medium">
+                                      {deleteStatus === 'processing' && 'Deleting user...'}
+                                      {deleteStatus === 'success' && 'User deleted successfully!'}
+                                      {deleteStatus === 'error' && 'Delete failed'}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm text-muted-foreground">
+                                    {Math.round(deleteProgress)}%
+                                  </span>
+                                </div>
+                                <Progress value={deleteProgress} className="h-2" />
+                              </div>
+                            )}
+                            
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel disabled={deletingUserId === user.id}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleDelete(user)}
+                                disabled={deletingUserId === user.id}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Delete
+                                {deletingUserId === user.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Deleting...
+                                  </div>
+                                ) : (
+                                  'Delete'
+                                )}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

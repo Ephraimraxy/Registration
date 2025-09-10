@@ -7,8 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, User, MapPin } from "lucide-react";
+import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
 import { db, validateRegistrationData, updateAdminStats } from "@/lib/firebase";
 import { SuccessModal } from "./success-modal";
@@ -29,6 +30,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<any>(null);
+  const [registrationProgress, setRegistrationProgress] = useState(0);
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'validating' | 'finding-room' | 'finding-tag' | 'creating-user' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
   const form = useForm<InsertUser>({
@@ -48,21 +51,30 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
   const onSubmit = async (data: InsertUser) => {
     setIsSubmitting(true);
+    setRegistrationStatus('validating');
+    setRegistrationProgress(10);
+    
     try {
       // Enhanced validation before processing
       const validation = validateRegistrationData(data);
       if (!validation.isValid) {
+        setRegistrationStatus('error');
         toast({
           title: "Validation Error",
           description: validation.errors.join(", "),
           variant: "destructive",
         });
         setIsSubmitting(false);
+        setRegistrationStatus('idle');
+        setRegistrationProgress(0);
         return;
       }
 
       // Use atomic transaction to prevent race conditions
-      const result = await runTransaction(db, async (transaction) => {
+      const result = await runTransaction(db, async (transaction: any) => {
+        setRegistrationStatus('finding-room');
+        setRegistrationProgress(30);
+        
         // Find available room for the gender
         const roomsQuery = query(
           collection(db, "rooms"),
@@ -83,6 +95,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           throw new Error(`Room ${roomData.roomNumber} is no longer available`);
         }
         
+        setRegistrationStatus('finding-tag');
+        setRegistrationProgress(50);
+        
         // Find available tag
         const tagsQuery = query(
           collection(db, "tags"),
@@ -101,6 +116,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         if (tagData.isAssigned) {
           throw new Error(`Tag ${tagData.tagNumber} is no longer available`);
         }
+        
+        setRegistrationStatus('creating-user');
+        setRegistrationProgress(70);
         
         // Create user data with assignment
         const userData = {
@@ -125,6 +143,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           assignedUserId: userRef.id,
         });
         
+        setRegistrationProgress(90);
+        
         return {
           userRef,
           userData,
@@ -132,6 +152,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           tagNumber: tagData.tagNumber,
         };
       });
+      
+      setRegistrationProgress(100);
+      setRegistrationStatus('success');
       
       // Create user object for success modal
       const newUser = {
@@ -157,13 +180,26 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       });
       
       form.reset();
+      
+      // Reset progress after success
+      setTimeout(() => {
+        setRegistrationStatus('idle');
+        setRegistrationProgress(0);
+      }, 2000);
     } catch (error: any) {
       console.error("Registration error:", error);
+      setRegistrationStatus('error');
       toast({
         title: "Registration Failed",
         description: error.message || "An error occurred during registration. Please try again.",
         variant: "destructive",
       });
+      
+      // Reset after error
+      setTimeout(() => {
+        setRegistrationStatus('idle');
+        setRegistrationProgress(0);
+      }, 3000);
     } finally {
       setIsSubmitting(false);
     }
@@ -344,6 +380,34 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                   </div>
                 </div>
 
+                {/* Progress Display */}
+                {isSubmitting && (
+                  <div className="space-y-4 py-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {registrationStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                        {registrationStatus === 'finding-room' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                        {registrationStatus === 'finding-tag' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                        {registrationStatus === 'creating-user' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                        {registrationStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        {registrationStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                        <span className="text-sm font-medium">
+                          {registrationStatus === 'validating' && 'Validating data...'}
+                          {registrationStatus === 'finding-room' && 'Finding available room...'}
+                          {registrationStatus === 'finding-tag' && 'Finding available tag...'}
+                          {registrationStatus === 'creating-user' && 'Creating user account...'}
+                          {registrationStatus === 'success' && 'Registration successful!'}
+                          {registrationStatus === 'error' && 'Registration failed'}
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {Math.round(registrationProgress)}%
+                      </span>
+                    </div>
+                    <Progress value={registrationProgress} className="h-2" />
+                  </div>
+                )}
+
                 <div className="flex justify-center pt-4">
                   <Button 
                     type="submit" 
@@ -352,8 +416,17 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     className="px-8"
                     data-testid="button-register"
                   >
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    {isSubmitting ? "Registering..." : "Register & Get Room Assignment"}
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Registering...
+                      </div>
+                    ) : (
+                      <>
+                        <UserPlus className="mr-2 h-5 w-5" />
+                        Register & Get Room Assignment
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

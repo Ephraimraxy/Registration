@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { User } from "@shared/schema";
 import { doc, updateDoc, runTransaction, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { X, Save } from "lucide-react";
+import { X, Save, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const editUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -33,6 +34,8 @@ interface EditStudentModalProps {
 
 export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'validating' | 'updating-room' | 'updating-user' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
   const form = useForm<EditUserData>({
@@ -53,9 +56,15 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
     if (!user.id) return;
 
     setIsUpdating(true);
+    setUpdateStatus('validating');
+    setUpdateProgress(10);
+    
     try {
       // Use atomic transaction for room reassignment if gender changed
       if (data.gender !== user.gender) {
+        setUpdateStatus('updating-room');
+        setUpdateProgress(30);
+        
         await runTransaction(db, async (transaction) => {
           // Free up old room if user had one
           if (user.roomNumber) {
@@ -97,6 +106,9 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
           }
 
           // Update user with new room assignment
+          setUpdateStatus('updating-user');
+          setUpdateProgress(70);
+          
           const userRef = doc(db, "users", user.id);
           transaction.update(userRef, {
             firstName: data.firstName,
@@ -108,9 +120,14 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
             roomNumber: newRoomNumber,
             tagNumber: data.tagNumber || user.tagNumber,
           });
+          
+          setUpdateProgress(90);
         });
       } else {
         // Simple update if gender didn't change
+        setUpdateStatus('updating-user');
+        setUpdateProgress(50);
+        
         const userRef = doc(db, "users", user.id);
         await updateDoc(userRef, {
           firstName: data.firstName,
@@ -122,7 +139,12 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
           roomNumber: data.roomNumber || user.roomNumber,
           tagNumber: data.tagNumber || user.tagNumber,
         });
+        
+        setUpdateProgress(90);
       }
+      
+      setUpdateProgress(100);
+      setUpdateStatus('success');
 
       toast({
         title: "User Updated",
@@ -131,14 +153,27 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
           : "User information has been updated successfully.",
       });
 
-      onClose();
+      // Reset after success
+      setTimeout(() => {
+        setUpdateStatus('idle');
+        setUpdateProgress(0);
+        onClose();
+      }, 2000);
+      
     } catch (error: any) {
       console.error("Error updating student:", error);
+      setUpdateStatus('error');
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update user. Please try again.",
         variant: "destructive",
       });
+      
+      // Reset after error
+      setTimeout(() => {
+        setUpdateStatus('idle');
+        setUpdateProgress(0);
+      }, 3000);
     } finally {
       setIsUpdating(false);
     }
@@ -280,6 +315,32 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
               />
             </div>
 
+            {/* Progress Display */}
+            {isUpdating && (
+              <div className="space-y-4 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {updateStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                    {updateStatus === 'updating-room' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                    {updateStatus === 'updating-user' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                    {updateStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    {updateStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                    <span className="text-sm font-medium">
+                      {updateStatus === 'validating' && 'Validating changes...'}
+                      {updateStatus === 'updating-room' && 'Updating room assignment...'}
+                      {updateStatus === 'updating-user' && 'Saving user information...'}
+                      {updateStatus === 'success' && 'Update successful!'}
+                      {updateStatus === 'error' && 'Update failed'}
+                    </span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(updateProgress)}%
+                  </span>
+                </div>
+                <Progress value={updateProgress} className="h-2" />
+              </div>
+            )}
+
             <div className="flex space-x-3 pt-4">
               <Button 
                 type="submit" 
@@ -287,8 +348,17 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 className="flex-1"
                 data-testid="button-save-changes"
               >
-                <Save className="mr-2 h-4 w-4" />
-                {isUpdating ? "Saving..." : "Save Changes"}
+                {isUpdating ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </div>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
               </Button>
               <Button 
                 type="button" 

@@ -362,8 +362,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             checkAvailability(value);
                           }} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-gender">
-                                <SelectValue placeholder="Select gender" />
+                              <SelectTrigger data-testid="select-gender" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Select gender" className="text-white" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
@@ -442,8 +442,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             form.setValue("lga", ""); // Reset LGA when state changes
                           }} value={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-state">
-                                <SelectValue placeholder="Select state" />
+                              <SelectTrigger data-testid="select-state" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Select state" className="text-white" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-60 bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
@@ -488,8 +488,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormLabel>Local Government Area</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-lga">
-                                <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} />
+                              <SelectTrigger data-testid="select-lga" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-white" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="max-h-60 bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">

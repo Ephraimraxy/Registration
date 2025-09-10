@@ -6,8 +6,8 @@
   publish = "dist"
 
 [build.environment]
-  # Node.js version - Firebase requires v20+
-  NODE_VERSION = "20"
+  # Node.js version
+  NODE_VERSION = "18"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]

@@ -45,6 +45,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
         // Free up the room bed
         if (user.roomNumber) {
           setDeleteProgress(40);
+          console.log("Freeing up room:", user.roomNumber);
           const roomsQuery = query(
             collection(db, "rooms"),
             where("roomNumber", "==", user.roomNumber)
@@ -54,9 +55,13 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
           if (!roomsSnapshot.empty) {
             const roomDoc = roomsSnapshot.docs[0];
             const roomData = roomDoc.data();
+            console.log("Room found:", roomData.roomNumber, "Current available beds:", roomData.availableBeds);
             transaction.update(roomDoc.ref, {
               availableBeds: roomData.availableBeds + 1,
             });
+            console.log("Room updated: available beds will be", roomData.availableBeds + 1);
+          } else {
+            console.log("No room found with number:", user.roomNumber);
           }
           setDeleteProgress(60);
         }
@@ -64,6 +69,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
         // Free up the tag
         if (user.tagNumber) {
           setDeleteProgress(70);
+          console.log("Freeing up tag:", user.tagNumber);
           const tagsQuery = query(
             collection(db, "tags"),
             where("tagNumber", "==", user.tagNumber)
@@ -72,10 +78,15 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
           
           if (!tagsSnapshot.empty) {
             const tagDoc = tagsSnapshot.docs[0];
+            const tagData = tagDoc.data();
+            console.log("Tag found:", tagData.tagNumber, "Currently assigned:", tagData.isAssigned);
             transaction.update(tagDoc.ref, {
               isAssigned: false,
               assignedUserId: null,
             });
+            console.log("Tag updated: isAssigned will be false");
+          } else {
+            console.log("No tag found with number:", user.tagNumber);
           }
           setDeleteProgress(85);
         }

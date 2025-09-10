@@ -62,6 +62,13 @@ export function AdminDashboard() {
         })) as Room[];
         setRooms(roomData);
         console.log("Rooms updated:", roomData.length, "rooms");
+        console.log("Room data:", roomData.map(room => ({
+          id: room.id,
+          roomNumber: room.roomNumber,
+          availableBeds: room.availableBeds,
+          gender: room.gender,
+          wing: room.wing
+        })));
       }
     );
 
@@ -74,6 +81,12 @@ export function AdminDashboard() {
         })) as TagType[];
         setTags(tagData);
         console.log("Tags updated:", tagData.length, "tags");
+        console.log("Tag data:", tagData.map(tag => ({
+          id: tag.id,
+          tagNumber: tag.tagNumber,
+          isAssigned: tag.isAssigned,
+          assignedUserId: tag.assignedUserId
+        })));
       }
     );
 
@@ -87,14 +100,31 @@ export function AdminDashboard() {
   // Calculate stats directly from real-time data
   useEffect(() => {
     console.log("Calculating stats from real-time data...");
+    console.log("Users:", users.length);
+    console.log("Rooms:", rooms.length);
+    console.log("Tags:", tags.length);
+    
+    // Calculate total available beds across all rooms
+    const totalAvailableBeds = rooms.reduce((sum, room) => sum + (room.availableBeds || 0), 0);
+    
     const calculatedStats = {
       totalStudents: users.length,
-      availableRooms: rooms.filter(room => room.availableBeds > 0).length,
+      availableRooms: totalAvailableBeds, // Total available beds, not number of rooms
       assignedTags: tags.filter(tag => tag.isAssigned).length,
       availableTags: tags.filter(tag => !tag.isAssigned).length,
     };
     
     console.log("Real-time calculated stats:", calculatedStats);
+    console.log("Room details:", rooms.map(room => ({ 
+      roomNumber: room.roomNumber, 
+      availableBeds: room.availableBeds,
+      gender: room.gender 
+    })));
+    console.log("Tag details:", tags.map(tag => ({ 
+      tagNumber: tag.tagNumber, 
+      isAssigned: tag.isAssigned 
+    })));
+    
     setStats(calculatedStats);
   }, [users, rooms, tags]);
 

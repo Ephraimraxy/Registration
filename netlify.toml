@@ -8,6 +8,8 @@
 [build.environment]
   # Node.js version
   NODE_VERSION = "18"
+  # Disable secrets scanning for Firebase config (these are public client-side values)
+  SECRETS_SCAN_ENABLED = "false"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]

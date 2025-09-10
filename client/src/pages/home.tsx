@@ -12,31 +12,50 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
       {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
+      <nav className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-4">
-              <Building className="h-8 w-8 text-primary" />
-              <h1 className="text-xl font-semibold text-foreground">REGISTRATION MANAGEMENT SYSTEM</h1>
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Building className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white drop-shadow-lg">
+                  🎓 REGISTRATION MANAGEMENT SYSTEM
+                </h1>
+                <p className="text-blue-100 text-sm font-medium">
+                  Student Accommodation & Tag Management
+                </p>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <Button
                 variant={activeView === 'registration' ? 'default' : 'secondary'}
                 onClick={() => setActiveView('registration')}
                 data-testid="button-show-registration"
+                className={`px-6 py-3 font-semibold transition-all duration-300 ${
+                  activeView === 'registration' 
+                    ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105' 
+                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30'
+                }`}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Register User
+                👤 Register User
               </Button>
               <Button
                 variant={activeView === 'admin' ? 'default' : 'secondary'}
                 onClick={() => setActiveView('admin')}
                 data-testid="button-show-admin"
+                className={`px-6 py-3 font-semibold transition-all duration-300 ${
+                  activeView === 'admin' 
+                    ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105' 
+                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30'
+                }`}
               >
                 <Settings className="mr-2 h-4 w-4" />
-                Admin Dashboard
+                ⚙️ Admin Dashboard
               </Button>
             </div>
           </div>
@@ -44,12 +63,14 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeView === 'registration' ? (
-          <RegistrationForm onSuccess={handleRegistrationSuccess} />
-        ) : (
-          <AdminDashboard />
-        )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8">
+          {activeView === 'registration' ? (
+            <RegistrationForm onSuccess={handleRegistrationSuccess} />
+          ) : (
+            <AdminDashboard />
+          )}
+        </div>
       </main>
     </div>
   );

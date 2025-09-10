@@ -73,19 +73,33 @@ export function CardPreviewPage({ user, onBack, onPrint }: CardPreviewPageProps)
           <Button
             onClick={onBack}
             variant="outline"
-            className="mb-4 bg-white/80 backdrop-blur-sm border-blue-200 hover:bg-blue-50 dark:bg-gray-800/80 dark:border-blue-700 dark:hover:bg-blue-950/50"
+            className="mb-6 bg-white/90 backdrop-blur-sm border-blue-300 hover:bg-blue-50 dark:bg-gray-800/90 dark:border-blue-600 dark:hover:bg-blue-950/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Registration
+            ← Back to Registration
           </Button>
           
-          <div className="text-center">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+          <div className="text-center bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 dark:from-blue-600/20 dark:via-indigo-600/20 dark:to-purple-600/20 rounded-2xl p-8 border border-blue-200/50 dark:border-blue-700/50">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4 drop-shadow-lg">
               🎓 Student ID Card Preview
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Review your registration details before printing
+            <p className="text-lg text-gray-700 dark:text-gray-300 font-medium">
+              ✨ Review your registration details before printing
             </p>
+            <div className="mt-4 flex justify-center gap-4">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium">Professional Design</span>
+              </div>
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                <span className="text-sm font-medium">Print Ready</span>
+              </div>
+              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-sm font-medium">Multiple Formats</span>
+              </div>
+            </div>
           </div>
         </div>
 

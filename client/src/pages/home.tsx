@@ -3,12 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Building, UserPlus, Settings } from "lucide-react";
 import { RegistrationForm } from "@/components/registration-form";
 import { AdminDashboard } from "@/components/admin-dashboard";
+import { RegistrationSuccessPage } from "@/components/registration-success-page";
+import { User } from "@shared/schema";
 
 export default function Home() {
-  const [activeView, setActiveView] = useState<'registration' | 'admin'>('registration');
+  const [activeView, setActiveView] = useState<'registration' | 'admin' | 'success'>('registration');
+  const [registeredUser, setRegisteredUser] = useState<User | null>(null);
 
-  const handleRegistrationSuccess = (user: any) => {
+  const handleRegistrationSuccess = (user: User) => {
     console.log("Registration successful:", user);
+    setRegisteredUser(user);
+    setActiveView('success');
+  };
+
+  const handleBackToRegistration = () => {
+    setActiveView('registration');
+    setRegisteredUser(null);
+  };
+
+  const handleNewRegistration = () => {
+    setActiveView('registration');
+    setRegisteredUser(null);
   };
 
   return (
@@ -60,15 +75,23 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8">
-          {activeView === 'registration' ? (
-            <RegistrationForm onSuccess={handleRegistrationSuccess} />
-          ) : (
-            <AdminDashboard />
-          )}
-        </div>
-      </main>
+      {activeView === 'success' && registeredUser ? (
+        <RegistrationSuccessPage
+          user={registeredUser}
+          onBack={handleBackToRegistration}
+          onNewRegistration={handleNewRegistration}
+        />
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8">
+            {activeView === 'registration' ? (
+              <RegistrationForm onSuccess={handleRegistrationSuccess} />
+            ) : (
+              <AdminDashboard />
+            )}
+          </div>
+        </main>
+      )}
     </div>
   );
 }

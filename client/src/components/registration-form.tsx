@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
 import { db, validateRegistrationData, updateAdminStats } from "@/lib/firebase";
-import { SuccessModal } from "./success-modal";
 import { safeAssignRoomAndTag, validateAvailability } from "@/lib/concurrency-utils";
 
 const NIGERIAN_STATES = [
@@ -69,8 +68,6 @@ interface RegistrationFormProps {
 
 export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState<any>(null);
   const [registrationProgress, setRegistrationProgress] = useState(0);
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'validating' | 'checking-availability' | 'finding-room' | 'finding-tag' | 'creating-user' | 'success' | 'error'>('idle');
   const [selectedState, setSelectedState] = useState<string>("");
@@ -238,15 +235,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       setRegistrationProgress(100);
       setRegistrationStatus('success');
       
-      // Create user object for success modal
+      // Create user object for success callback
       const newUser = {
         id: result.userRef.id,
         ...result.userData,
         createdAt: result.userData.createdAt.toDate(),
       };
       
-      setRegisteredUser(newUser);
-      setShowSuccess(true);
       onSuccess(newUser);
       
       // Update admin stats in real-time
@@ -614,16 +609,6 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         </Card>
       </div>
 
-      {showSuccess && registeredUser && (
-        <SuccessModal
-          user={registeredUser}
-          onClose={() => setShowSuccess(false)}
-          onNewRegistration={() => {
-            setShowSuccess(false);
-            form.reset();
-          }}
-        />
-      )}
     </>
   );
 }

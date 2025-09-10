@@ -373,10 +373,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                 <SelectValue placeholder="Select gender" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-blue-200 dark:border-blue-700 shadow-xl">
+                            <SelectContent className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/90 dark:via-indigo-950/90 dark:to-purple-950/90 backdrop-blur-sm border-2 border-blue-300 dark:border-blue-600 shadow-2xl">
                               <SelectItem 
                                 value="Male"
-                                className="hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 focus:bg-gradient-to-r focus:from-blue-200 focus:to-indigo-200 dark:focus:from-blue-800/50 dark:focus:to-indigo-800/50 transition-all duration-200 hover:shadow-md hover:scale-[1.02]"
+                                className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/60 dark:to-indigo-900/60 hover:bg-gradient-to-r hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800/70 dark:hover:to-indigo-800/70 focus:bg-gradient-to-r focus:from-blue-300 focus:to-indigo-300 dark:focus:from-blue-700/80 dark:focus:to-indigo-700/80 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-blue-200/50 dark:border-blue-700/50"
                               >
                                 <span className="flex items-center gap-2">
                                   <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm"></span>
@@ -385,7 +385,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               </SelectItem>
                               <SelectItem 
                                 value="Female"
-                                className="hover:bg-gradient-to-r hover:from-pink-100 hover:to-rose-100 dark:hover:from-pink-900/40 dark:hover:to-rose-900/40 focus:bg-gradient-to-r focus:from-pink-200 focus:to-rose-200 dark:focus:from-pink-800/50 dark:focus:to-rose-800/50 transition-all duration-200 hover:shadow-md hover:scale-[1.02]"
+                                className="bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/60 dark:to-rose-900/60 hover:bg-gradient-to-r hover:from-pink-200 hover:to-rose-200 dark:hover:from-pink-800/70 dark:hover:to-rose-800/70 focus:bg-gradient-to-r focus:from-pink-300 focus:to-rose-300 dark:focus:from-pink-700/80 dark:focus:to-rose-700/80 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-pink-200/50 dark:border-pink-700/50"
                               >
                                 <span className="flex items-center gap-2">
                                   <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 shadow-sm"></span>
@@ -453,11 +453,18 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                 <SelectValue placeholder="Select state" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-green-200 dark:border-green-700 shadow-xl">
+                            <SelectContent className="max-h-60 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/90 dark:via-emerald-950/90 dark:to-teal-950/90 backdrop-blur-sm border-2 border-green-300 dark:border-green-600 shadow-2xl">
                                 <SelectItem 
                                   key={state} 
                                   value={state}
-                                  className="hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 focus:bg-gradient-to-r focus:from-blue-200 focus:to-indigo-200 dark:focus:from-blue-800/50 dark:focus:to-indigo-800/50 transition-all duration-200 hover:shadow-md hover:scale-[1.02]"
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-green-200/50 dark:border-green-700/50 ${
+                                    index % 6 === 0 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/60 dark:to-indigo-900/60 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800/70 dark:hover:to-indigo-800/70' :
+                                    index % 6 === 1 ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/60 dark:to-emerald-900/60 hover:from-green-200 hover:to-emerald-200 dark:hover:from-green-800/70 dark:hover:to-emerald-800/70' :
+                                    index % 6 === 2 ? 'bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/60 dark:to-violet-900/60 hover:from-purple-200 hover:to-violet-200 dark:hover:from-purple-800/70 dark:hover:to-violet-800/70' :
+                                    index % 6 === 3 ? 'bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/60 dark:to-amber-900/60 hover:from-orange-200 hover:to-amber-200 dark:hover:from-orange-800/70 dark:hover:to-amber-800/70' :
+                                    index % 6 === 4 ? 'bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/60 dark:to-rose-900/60 hover:from-pink-200 hover:to-rose-200 dark:hover:from-pink-800/70 dark:hover:to-rose-800/70' :
+                                    'bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-900/60 dark:to-blue-900/60 hover:from-indigo-200 hover:to-blue-200 dark:hover:from-indigo-800/70 dark:hover:to-blue-800/70'
+                                  }`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <span className={`w-3 h-3 rounded-full shadow-sm ${
@@ -491,12 +498,18 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                 <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-emerald-200 dark:border-emerald-700 shadow-xl">
+                            <SelectContent className="max-h-60 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/90 dark:via-teal-950/90 dark:to-cyan-950/90 backdrop-blur-sm border-2 border-emerald-300 dark:border-emerald-600 shadow-2xl">
                               {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
                                 <SelectItem 
                                   key={lga} 
                                   value={lga}
-                                  className="hover:bg-gradient-to-r hover:from-emerald-100 hover:to-teal-100 dark:hover:from-emerald-900/40 dark:hover:to-teal-900/40 focus:bg-gradient-to-r focus:from-emerald-200 focus:to-teal-200 dark:focus:from-emerald-800/50 dark:focus:to-teal-800/50 transition-all duration-200 hover:shadow-md hover:scale-[1.02]"
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-emerald-200/50 dark:border-emerald-700/50 ${
+                                    index % 5 === 0 ? 'bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/60 dark:to-teal-900/60 hover:from-emerald-200 hover:to-teal-200 dark:hover:from-emerald-800/70 dark:hover:to-teal-800/70' :
+                                    index % 5 === 1 ? 'bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900/60 dark:to-cyan-900/60 hover:from-teal-200 hover:to-cyan-200 dark:hover:from-teal-800/70 dark:hover:to-cyan-800/70' :
+                                    index % 5 === 2 ? 'bg-gradient-to-r from-cyan-100 to-sky-100 dark:from-cyan-900/60 dark:to-sky-900/60 hover:from-cyan-200 hover:to-sky-200 dark:hover:from-cyan-800/70 dark:hover:to-sky-800/70' :
+                                    index % 5 === 3 ? 'bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/60 dark:to-blue-900/60 hover:from-sky-200 hover:to-blue-200 dark:hover:from-sky-800/70 dark:hover:to-blue-800/70' :
+                                    'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/60 dark:to-indigo-900/60 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800/70 dark:hover:to-indigo-800/70'
+                                  }`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <span className={`w-2 h-2 rounded-full shadow-sm ${

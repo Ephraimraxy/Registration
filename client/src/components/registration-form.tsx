@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { collection, addDoc, query, where, getDocs, updateDoc, doc, Timestamp, runTransaction } from "firebase/firestore";
-import { db, validateRegistrationData } from "@/lib/firebase";
+import { validateRegistrationData } from "@/lib/firebase";
 import { safeAssignRoomAndTag, validateAvailability } from "@/lib/concurrency-utils";
 
 const NIGERIAN_STATES = [
@@ -141,105 +140,25 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         return;
       }
 
-      // Use atomic transaction to prevent race conditions
-      const result = await runTransaction(db, async (transaction: any) => {
-        setRegistrationStatus('finding-room');
-        setRegistrationProgress(30);
-        
-        // Find available room for the gender (using single field query to avoid composite index)
-        const roomsQuery = query(
-          collection(db, "rooms"),
-          where("gender", "==", data.gender)
-        );
-        const roomsSnapshot = await getDocs(roomsQuery);
-        
-        if (roomsSnapshot.empty) {
-          throw new Error(`No available rooms for ${data.gender} students`);
-        }
-        
-        // Find the first room with available beds
-        let availableRoom = null;
-        let roomData = null;
-        
-        for (const roomDoc of roomsSnapshot.docs) {
-          const data = roomDoc.data();
-          if (data.availableBeds > 0) {
-            availableRoom = roomDoc;
-            roomData = data;
-            break;
-          }
-        }
-        
-        if (!availableRoom) {
-          throw new Error(`No available rooms for ${data.gender} students`);
-        }
-        
-        setRegistrationStatus('finding-tag');
-        setRegistrationProgress(50);
-        
-        // Find available tag
-        const tagsQuery = query(
-          collection(db, "tags"),
-          where("isAssigned", "==", false)
-        );
-        const tagsSnapshot = await getDocs(tagsQuery);
-        
-        if (tagsSnapshot.empty) {
-          throw new Error("No available tags");
-        }
-        
-        const availableTag = tagsSnapshot.docs[0];
-        const tagData = availableTag.data();
-        
-        // Verify tag is still available within transaction
-        if (tagData.isAssigned) {
-          throw new Error(`Tag ${tagData.tagNumber} is no longer available`);
-        }
-        
-        setRegistrationStatus('creating-user');
-        setRegistrationProgress(70);
-        
-        // Create user data with assignment
-        const userData = {
-          ...data,
-          roomNumber: roomData.roomNumber,
-          tagNumber: tagData.tagNumber,
-          createdAt: Timestamp.now(),
-        };
-        
-        // Create user document reference
-        const userRef = doc(collection(db, "users"));
-        const roomRef = doc(db, "rooms", availableRoom.id);
-        const tagRef = doc(db, "tags", availableTag.id);
-        
-        // Add all operations to transaction
-        transaction.set(userRef, userData);
-        transaction.update(roomRef, {
-          availableBeds: roomData.availableBeds - 1,
-        });
-        transaction.update(tagRef, {
-          isAssigned: true,
-          assignedUserId: userRef.id,
-        });
-        
-        setRegistrationProgress(90);
-        
-        return {
-          userRef,
-          userData,
-          roomNumber: roomData.roomNumber,
-          tagNumber: tagData.tagNumber,
-        };
-      });
+      // Use shared safe assignment utility (handles transactions & concurrency)
+      setRegistrationStatus('finding-room');
+      setRegistrationProgress(30);
+      const result = await safeAssignRoomAndTag(data);
+      if (!result.success || !result.userData) {
+        throw new Error(result.error || 'Registration failed');
+      }
+      setRegistrationStatus('creating-user');
+      setRegistrationProgress(80);
       
       setRegistrationProgress(100);
       setRegistrationStatus('success');
       
       // Create user object for success callback
       const newUser = {
-        id: result.userRef.id,
+        id: (result as any).userRef?.id || crypto.randomUUID?.() || String(Date.now()),
         ...result.userData,
-        createdAt: result.userData.createdAt.toDate(),
+        // createdAt from serverTimestamp is not immediately a Date client-side; show local time
+        createdAt: new Date(),
       };
       
       onSuccess(newUser);
@@ -362,25 +281,25 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             checkAvailability(value);
                           }} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-gender" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder="Select gender" className="text-white" />
+                              <SelectTrigger data-testid="select-gender" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Select gender" className="text-gray-900 dark:text-gray-100" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
+                            <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                               <SelectItem 
                                 value="Male"
-                                className="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-700 dark:hover:from-blue-700 dark:hover:to-indigo-800 focus:bg-gradient-to-r focus:from-blue-500 focus:to-indigo-600 dark:focus:from-blue-600 dark:focus:to-indigo-700 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-600 dark:border-gray-500 text-white"
+                                className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                               >
-                                <span className="flex items-center gap-2 text-white">
+                                <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                   <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm"></span>
                                   👨 Male
                                 </span>
                               </SelectItem>
                               <SelectItem 
                                 value="Female"
-                                className="bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:bg-gradient-to-r hover:from-pink-600 hover:to-rose-700 dark:hover:from-pink-700 dark:hover:to-rose-800 focus:bg-gradient-to-r focus:from-pink-500 focus:to-rose-600 dark:focus:from-pink-600 dark:focus:to-rose-700 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-600 dark:border-gray-500 text-white"
+                                className="hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                               >
-                                <span className="flex items-center gap-2 text-white">
+                                <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                   <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 shadow-sm"></span>
                                   👩 Female
                                 </span>
@@ -442,25 +361,25 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             form.setValue("lga", ""); // Reset LGA when state changes
                           }} value={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-state" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder="Select state" className="text-white" />
+                              <SelectTrigger data-testid="select-state" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Select state" className="text-gray-900 dark:text-gray-100" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-60 bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
+                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                               {NIGERIAN_STATES.map((state, index) => (
                                 <SelectItem 
                                   key={state} 
                                   value={state}
-                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-600 dark:border-gray-500 text-white ${
-                                    index % 6 === 0 ? 'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-blue-600 hover:to-indigo-700 dark:hover:from-blue-700 dark:hover:to-indigo-800' :
-                                    index % 6 === 1 ? 'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-green-600 hover:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800' :
-                                    index % 6 === 2 ? 'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-purple-600 hover:to-violet-700 dark:hover:from-purple-700 dark:hover:to-violet-800' :
-                                    index % 6 === 3 ? 'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-orange-600 hover:to-amber-700 dark:hover:from-orange-700 dark:hover:to-amber-800' :
-                                    index % 6 === 4 ? 'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-pink-600 hover:to-rose-700 dark:hover:from-pink-700 dark:hover:to-rose-800' :
-                                    'bg-gradient-to-r from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 hover:from-indigo-600 hover:to-blue-700 dark:hover:from-indigo-700 dark:hover:to-blue-800'
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                    index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                    index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                    index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
+                                    index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
+                                    index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
                                   }`}
                                 >
-                                  <span className="flex items-center gap-2 text-white">
+                                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                     <span className={`w-3 h-3 rounded-full shadow-sm ${
                                       index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
                                       index % 6 === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
@@ -488,24 +407,24 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormLabel>Local Government Area</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-lga" className="bg-gray-900 text-white border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-white" />
+                              <SelectTrigger data-testid="select-lga" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-gray-900 dark:text-gray-100" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="max-h-60 bg-gradient-to-br from-gray-800 via-gray-900 to-black dark:from-gray-900 dark:via-black dark:to-gray-800 backdrop-blur-sm border-2 border-gray-600 dark:border-gray-500 shadow-2xl">
+                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                               {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
                                 <SelectItem 
                                   key={lga} 
                                   value={lga}
-                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-600 dark:border-gray-500 text-white ${
-                                    index % 5 === 0 ? 'bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/60 dark:to-teal-900/60 hover:from-emerald-200 hover:to-teal-200 dark:hover:from-emerald-800/70 dark:hover:to-teal-800/70' :
-                                    index % 5 === 1 ? 'bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900/60 dark:to-cyan-900/60 hover:from-teal-200 hover:to-cyan-200 dark:hover:from-teal-800/70 dark:hover:to-cyan-800/70' :
-                                    index % 5 === 2 ? 'bg-gradient-to-r from-cyan-100 to-sky-100 dark:from-cyan-900/60 dark:to-sky-900/60 hover:from-cyan-200 hover:to-sky-200 dark:hover:from-cyan-800/70 dark:hover:to-sky-800/70' :
-                                    index % 5 === 3 ? 'bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/60 dark:to-blue-900/60 hover:from-sky-200 hover:to-blue-200 dark:hover:from-sky-800/70 dark:hover:to-blue-800/70' :
-                                    'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/60 dark:to-indigo-900/60 hover:from-blue-200 hover:to-indigo-200 dark:hover:from-blue-800/70 dark:hover:to-indigo-800/70'
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                    index % 5 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                    index % 5 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                                    index % 5 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                                    index % 5 === 3 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
                                   }`}
                                 >
-                                  <span className="flex items-center gap-2 text-white">
+                                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                     <span className={`w-2 h-2 rounded-full shadow-sm ${
                                       index % 5 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
                                       index % 5 === 1 ? 'bg-gradient-to-r from-teal-500 to-teal-600' :

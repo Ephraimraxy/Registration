@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap } from "lucide-react";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap, User as UserIcon } from "lucide-react";
 import type { User } from "@shared/schema";
 import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -298,7 +298,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                                 <AlertDialogDescription className="text-base leading-relaxed">
                                   <div className="flex items-start gap-3 mb-3">
                                     <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-full mt-1">
-                                      <User className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                      <UserIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
                                     </div>
                                     <div>
                                       <span className="font-bold text-gray-900 dark:text-gray-100">User:</span>

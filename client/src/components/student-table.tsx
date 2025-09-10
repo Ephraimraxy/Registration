@@ -278,23 +278,57 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                               )}
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="max-w-md">
+                          <AlertDialogContent className="max-w-lg bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-yellow-950/20 border-2 border-red-200 dark:border-red-800 shadow-2xl">
                             <AlertDialogHeader>
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
-                                  <Shield className="h-6 w-6 text-red-600 dark:text-red-400" />
+                              <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-full shadow-lg animate-pulse">
+                                  <AlertCircle className="h-8 w-8 text-white" />
                                 </div>
-                                <AlertDialogTitle className="text-xl font-bold text-red-600 dark:text-red-400">
-                                  Delete User
-                                </AlertDialogTitle>
+                                <div>
+                                  <AlertDialogTitle className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                                    ⚠️ Delete User Warning
+                                  </AlertDialogTitle>
+                                  <p className="text-sm text-red-600 dark:text-red-400 font-medium mt-1">
+                                    This action is irreversible!
+                                  </p>
+                                </div>
                               </div>
-                              <AlertDialogDescription className="text-base leading-relaxed">
-                                Are you sure you want to delete <span className="font-semibold text-foreground">{fullName}</span>? 
-                                <br /><br />
-                                <span className="text-orange-600 dark:text-orange-400 font-medium">⚠️ This action cannot be undone.</span>
-                                <br />
-                                The user's room and tag will be made available for reassignment.
-                              </AlertDialogDescription>
+                              
+                              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-4 border border-red-200 dark:border-red-700">
+                                <AlertDialogDescription className="text-base leading-relaxed">
+                                  <div className="flex items-start gap-3 mb-3">
+                                    <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-full mt-1">
+                                      <User className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                    </div>
+                                    <div>
+                                      <span className="font-bold text-gray-900 dark:text-gray-100">User:</span>
+                                      <span className="ml-2 font-semibold text-blue-600 dark:text-blue-400">{fullName}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                      <span className="font-medium">All user data will be permanently deleted</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                      <span>Room and tag will be freed for reassignment</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                      <span>Admin statistics will be updated automatically</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="mt-4 p-3 bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 rounded-lg border border-red-300 dark:border-red-600">
+                                    <div className="flex items-center gap-2 text-red-800 dark:text-red-200 font-bold">
+                                      <AlertCircle className="h-4 w-4" />
+                                      <span>This action cannot be undone!</span>
+                                    </div>
+                                  </div>
+                                </AlertDialogDescription>
+                              </div>
                             </AlertDialogHeader>
                             
                             {/* Enhanced Progress Display */}
@@ -346,10 +380,10 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                               </div>
                             )}
                             
-                            <AlertDialogFooter className="gap-3">
+                            <AlertDialogFooter className="gap-3 pt-4">
                               <AlertDialogCancel 
                                 disabled={deletingUserId === user.id}
-                                className="border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                                className="border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-105"
                               >
                                 <X className="h-4 w-4 mr-2" />
                                 Cancel
@@ -357,7 +391,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                               <AlertDialogAction 
                                 onClick={() => handleDelete(user)}
                                 disabled={deletingUserId === user.id}
-                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                className="bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-bold"
                               >
                                 {deletingUserId === user.id ? (
                                   <>

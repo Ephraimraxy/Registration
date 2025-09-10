@@ -7,7 +7,7 @@
 
 [build.environment]
   # Node.js version
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]
@@ -37,5 +37,5 @@
     Cache-Control = "public, max-age=0, must-revalidate"
 
 # Functions (if you add serverless functions later)
-[functions]
-  directory = "netlify/functions"
+# [functions]
+#   directory = "netlify/functions"

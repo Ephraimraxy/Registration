@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { CheckCircle, Download, X, UserPlus, IdCard, Eye } from "lucide-react";
 import { generateUserDetailsPDF } from "@/lib/pdf-utils";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
+import type { User } from "@shared/schema";
 import { useState } from "react";
 import { CardPreviewPage } from "./card-preview-page";
 

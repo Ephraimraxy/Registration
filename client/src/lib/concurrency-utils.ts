@@ -7,7 +7,8 @@ import {
   runTransaction, 
   writeBatch,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  increment
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -55,10 +56,6 @@ export async function safeAssignRoomAndTag(
         // Step 2: Find and reserve a tag atomically
         const tagAssignment = await findAndReserveTag(transaction);
         if (!tagAssignment) {
-          // Rollback room reservation if tag assignment fails
-          transaction.update(doc(db, "rooms", roomAssignment.roomId), {
-            availableBeds: roomAssignment.availableBeds, // Restore original count
-          });
           throw new Error("No available tags");
         }
 
@@ -74,12 +71,35 @@ export async function safeAssignRoomAndTag(
         };
 
         // Step 4: Execute all operations atomically
+        // Verify room availability at commit time and decrement using increment
+        const roomRef = doc(db, "rooms", roomAssignment.roomId);
+        const latestRoomSnap = await transaction.get(roomRef);
+        if (!latestRoomSnap.exists()) {
+          throw new Error("Selected room no longer exists");
+        }
+        const latestRoom = latestRoomSnap.data() as any;
+        if ((latestRoom.availableBeds ?? 0) <= 0) {
+          throw new Error("Selected room just became full. Please retry.");
+        }
+
+        // Verify tag still unassigned at commit time
+        const tagRef = doc(db, "tags", tagAssignment.tagId);
+        const latestTagSnap = await transaction.get(tagRef);
+        if (!latestTagSnap.exists()) {
+          throw new Error("Selected tag no longer exists");
+        }
+        const latestTag = latestTagSnap.data() as any;
+        if (latestTag.isAssigned) {
+          throw new Error("Selected tag was just assigned. Please retry.");
+        }
+
+        // Apply updates
         transaction.set(userRef, finalUserData);
-        transaction.update(doc(db, "rooms", roomAssignment.roomId), {
-          availableBeds: roomAssignment.availableBeds - 1,
+        transaction.update(roomRef, {
+          availableBeds: increment(-1),
           lastAssigned: serverTimestamp(),
         });
-        transaction.update(doc(db, "tags", tagAssignment.tagId), {
+        transaction.update(tagRef, {
           isAssigned: true,
           assignedUserId: userRef.id,
           assignedAt: serverTimestamp(),

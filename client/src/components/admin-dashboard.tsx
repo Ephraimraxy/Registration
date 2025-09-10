@@ -106,12 +106,10 @@ export function AdminDashboard() {
     console.log("Rooms:", rooms.length);
     console.log("Tags:", tags.length);
     
-    // Calculate total available beds across all rooms
-    const totalAvailableBeds = rooms.reduce((sum, room) => sum + (room.availableBeds || 0), 0);
-    
     const calculatedStats = {
       totalStudents: users.length,
-      availableRooms: totalAvailableBeds, // Total available beds, not number of rooms
+      // Number of rooms that still have at least 1 available bed slot
+      availableRooms: rooms.filter(room => (room.availableBeds || 0) > 0).length,
       assignedTags: tags.filter(tag => tag.isAssigned).length,
       availableTags: tags.filter(tag => !tag.isAssigned).length,
     };

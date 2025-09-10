@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { initializeFirestore, collection, doc, setDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { initializeSampleData } from "./db-init";
 
@@ -18,8 +18,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Initialize Firestore with long polling to avoid QUIC/proxy issues
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false,
+});
 
 // Initialize Analytics
 export const analytics = getAnalytics(app);

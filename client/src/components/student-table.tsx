@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap } from "lucide-react";
 import { User } from "@shared/schema";
 import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
 import { db, updateAdminStats } from "@/lib/firebase";
@@ -96,8 +96,9 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
       }
       
       toast({
-        title: "User Deleted",
-        description: "User record has been deleted successfully.",
+        title: "✅ User Deleted Successfully",
+        description: `${fullName} has been removed from the system. Room and tag are now available.`,
+        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
       });
       
       // Reset after success
@@ -109,9 +110,10 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
       console.error("Error deleting student:", error);
       setDeleteStatus('error');
       toast({
-        title: "Delete Failed",
+        title: "❌ Delete Failed",
         description: error.message || "Failed to delete user. Please try again.",
         variant: "destructive",
+        className: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/20 dark:text-red-400",
       });
       
       // Reset after error
@@ -157,7 +159,7 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Registered Students</CardTitle>
+        <CardTitle>Users Registration</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -194,7 +196,15 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                 const avatarColor = getAvatarColor(fullName);
                 
                 return (
-                  <tr key={user.id} className="hover:bg-accent transition-colors" data-testid={`row-user-${user.id}`}>
+                  <tr 
+                    key={user.id} 
+                    className={`hover:bg-accent transition-all duration-300 ${
+                      deletingUserId === user.id 
+                        ? 'bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500 animate-pulse' 
+                        : 'hover:shadow-md'
+                    }`} 
+                    data-testid={`row-user-${user.id}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Avatar className="h-10 w-10">
@@ -251,59 +261,110 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                               size="sm"
                               disabled={deletingUserId === user.id}
                               data-testid={`button-delete-${user.id}`}
+                              className={`transition-all duration-300 hover:scale-110 ${
+                                deletingUserId === user.id 
+                                  ? 'text-orange-500 hover:text-orange-600' 
+                                  : 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20'
+                              }`}
                             >
                               {deletingUserId === user.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
                               ) : (
                                 <Trash2 className="h-4 w-4" />
                               )}
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="max-w-md">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {fullName}? This action cannot be undone.
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
+                                  <Shield className="h-6 w-6 text-red-600 dark:text-red-400" />
+                                </div>
+                                <AlertDialogTitle className="text-xl font-bold text-red-600 dark:text-red-400">
+                                  Delete User
+                                </AlertDialogTitle>
+                              </div>
+                              <AlertDialogDescription className="text-base leading-relaxed">
+                                Are you sure you want to delete <span className="font-semibold text-foreground">{fullName}</span>? 
+                                <br /><br />
+                                <span className="text-orange-600 dark:text-orange-400 font-medium">⚠️ This action cannot be undone.</span>
+                                <br />
                                 The user's room and tag will be made available for reassignment.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             
-                            {/* Progress Display */}
+                            {/* Enhanced Progress Display */}
                             {deletingUserId === user.id && (
-                              <div className="space-y-3 py-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    {deleteStatus === 'processing' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                                    {deleteStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                                    {deleteStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-                                    <span className="text-sm font-medium">
-                                      {deleteStatus === 'processing' && 'Deleting user...'}
-                                      {deleteStatus === 'success' && 'User deleted successfully!'}
-                                      {deleteStatus === 'error' && 'Delete failed'}
-                                    </span>
+                              <div className="space-y-4 py-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                      {deleteStatus === 'processing' && (
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                                          <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                      )}
+                                      {deleteStatus === 'success' && (
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full animate-pulse">
+                                          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                      )}
+                                      {deleteStatus === 'error' && (
+                                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        </div>
+                                      )}
+                                      <span className="font-semibold text-foreground">
+                                        {deleteStatus === 'processing' && 'Deleting user...'}
+                                        {deleteStatus === 'success' && 'User deleted successfully!'}
+                                        {deleteStatus === 'error' && 'Delete failed'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="h-4 w-4 text-blue-500" />
+                                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                        {Math.round(deleteProgress)}%
+                                      </span>
+                                    </div>
                                   </div>
-                                  <span className="text-sm text-muted-foreground">
-                                    {Math.round(deleteProgress)}%
-                                  </span>
+                                  <Progress 
+                                    value={deleteProgress} 
+                                    className="h-3 bg-blue-100 dark:bg-blue-900/20"
+                                  />
+                                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                                    {deleteProgress < 30 && 'Preparing deletion...'}
+                                    {deleteProgress >= 30 && deleteProgress < 60 && 'Freeing up room...'}
+                                    {deleteProgress >= 60 && deleteProgress < 85 && 'Freeing up tag...'}
+                                    {deleteProgress >= 85 && deleteProgress < 100 && 'Removing user record...'}
+                                    {deleteProgress === 100 && 'Complete!'}
+                                  </div>
                                 </div>
-                                <Progress value={deleteProgress} className="h-2" />
                               </div>
                             )}
                             
-                            <AlertDialogFooter>
-                              <AlertDialogCancel disabled={deletingUserId === user.id}>Cancel</AlertDialogCancel>
+                            <AlertDialogFooter className="gap-3">
+                              <AlertDialogCancel 
+                                disabled={deletingUserId === user.id}
+                                className="border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                              </AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleDelete(user)}
                                 disabled={deletingUserId === user.id}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                               >
                                 {deletingUserId === user.id ? (
-                                  <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     Deleting...
-                                  </div>
+                                  </>
                                 ) : (
-                                  'Delete'
+                                  <>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete User
+                                  </>
                                 )}
                               </AlertDialogAction>
                             </AlertDialogFooter>

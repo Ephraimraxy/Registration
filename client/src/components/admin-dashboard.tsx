@@ -14,7 +14,7 @@ import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
-import { generateUserDetailsPDF } from "@/lib/pdf-utils";
+import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { useToast } from "@/hooks/use-toast";
 
 export function AdminDashboard() {
@@ -145,13 +145,11 @@ export function AdminDashboard() {
           description: "Students data has been exported to Excel successfully!",
         });
       } else {
-        // Export as PDF - generate individual PDFs for each user
-        users.forEach(user => {
-          generateUserDetailsPDF(user);
-        });
+        // Export as PDF - generate single PDF with all users in table format
+        exportUsersToPDF(users);
         toast({
           title: "Export Successful",
-          description: `PDF files generated for ${users.length} students successfully!`,
+          description: `PDF report generated for ${users.length} students successfully!`,
         });
       }
     } catch (error: any) {
@@ -243,10 +241,10 @@ export function AdminDashboard() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
-                <Download className="mr-2 h-4 w-4" />
-                Export Users
-              </Button>
+            <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
+              <Download className="mr-2 h-4 w-4" />
+              Export Users
+            </Button>
             </div>
           </div>
         </CardContent>

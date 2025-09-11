@@ -1,28 +1,24 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { Building, UserPlus, Settings } from "lucide-react";
 import { RegistrationForm } from "@/components/registration-form";
-import { AdminDashboard } from "@/components/admin-dashboard";
 import { RegistrationSuccessPage } from "@/components/registration-success-page";
 import type { User } from "@shared/schema";
 
 export default function Home() {
-  const [activeView, setActiveView] = useState<'registration' | 'admin' | 'success'>('registration');
   const [registeredUser, setRegisteredUser] = useState<User | null>(null);
 
   const handleRegistrationSuccess = (user: User) => {
     console.log("Registration successful:", user);
     setRegisteredUser(user);
-    setActiveView('success');
   };
 
   const handleBackToRegistration = () => {
-    setActiveView('registration');
     setRegisteredUser(null);
   };
 
   const handleNewRegistration = () => {
-    setActiveView('registration');
     setRegisteredUser(null);
   };
 
@@ -44,38 +40,30 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-3">
               <Button
-                variant={activeView === 'registration' ? 'default' : 'secondary'}
-                onClick={() => setActiveView('registration')}
+                variant="default"
                 data-testid="button-show-registration"
-                className={`px-6 py-3 font-semibold transition-all duration-300 ${
-                  activeView === 'registration' 
-                    ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105' 
-                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30'
-                }`}
+                className="px-6 py-3 font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 👤 Register User
               </Button>
-              <Button
-                variant={activeView === 'admin' ? 'default' : 'secondary'}
-                onClick={() => setActiveView('admin')}
-                data-testid="button-show-admin"
-                className={`px-6 py-3 font-semibold transition-all duration-300 ${
-                  activeView === 'admin' 
-                    ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105' 
-                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30'
-                }`}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                ⚙️ Admin Dashboard
-              </Button>
+              <Link href="/admin">
+                <Button
+                  variant="secondary"
+                  data-testid="button-show-admin"
+                  className="px-6 py-3 font-semibold transition-all duration-300 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  ⚙️ Admin Dashboard
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      {activeView === 'success' && registeredUser ? (
+      {registeredUser ? (
         <RegistrationSuccessPage
           user={registeredUser}
           onBack={handleBackToRegistration}
@@ -84,11 +72,7 @@ export default function Home() {
       ) : (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8">
-            {activeView === 'registration' ? (
-              <RegistrationForm onSuccess={handleRegistrationSuccess} />
-            ) : (
-              <AdminDashboard />
-            )}
+            <RegistrationForm onSuccess={handleRegistrationSuccess} />
           </div>
         </main>
       )}

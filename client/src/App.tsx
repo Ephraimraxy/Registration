@@ -6,12 +6,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initializeDatabase } from "@/lib/firebase";
 import Home from "@/pages/home";
+import { RoomsTagsDetailPage } from "@/components/rooms-tags-detail-page";
+import { AdminDashboard } from "@/components/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/rooms-tags" component={() => <RoomsTagsDetailPage onBack={() => window.history.back()} />} />
       <Route component={NotFound} />
     </Switch>
   );

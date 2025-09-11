@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ export function AdminDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [showDetailedView, setShowDetailedView] = useState(false);
+  const [, setLocation] = useLocation();
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -274,7 +275,7 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
-            <Button onClick={() => setShowDetailedView(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <Button onClick={() => setLocation('/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <Building className="mr-2 h-4 w-4" />
               🏠 View Rooms & Tags Details
             </Button>
@@ -400,11 +401,7 @@ export function AdminDashboard() {
         />
       )}
 
-      {showDetailedView && (
-        <RoomsTagsDetailPage
-          onBack={() => setShowDetailedView(false)}
-        />
-      )}
+      {/* Details view moved to dedicated route */}
     </div>
   );
 }

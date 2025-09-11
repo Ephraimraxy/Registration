@@ -4,6 +4,7 @@ import {
   getDocs, 
   query, 
   where, 
+  orderBy,
   runTransaction, 
   writeBatch,
   Timestamp,
@@ -185,10 +186,11 @@ async function findAndReserveRoom(
  * Finds and reserves a tag atomically within a transaction
  */
 async function findAndReserveTag(transaction: any): Promise<TagAssignment | null> {
-  // Query for unassigned tags
+  // Query for unassigned tags ordered by tagNumber to ensure serial assignment
   const tagsQuery = query(
     collection(db, "tags"),
-    where("isAssigned", "==", false)
+    where("isAssigned", "==", false),
+    orderBy("tagNumber", "asc")
   );
   
   const tagsSnapshot = await getDocs(tagsQuery);
@@ -197,7 +199,7 @@ async function findAndReserveTag(transaction: any): Promise<TagAssignment | null
     return null;
   }
 
-  // Get the first available tag
+  // Get the first available tag (now guaranteed to be lowest number)
   const tagDoc = tagsSnapshot.docs[0];
   const tagData = tagDoc.data();
   

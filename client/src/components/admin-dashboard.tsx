@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
@@ -43,13 +43,19 @@ export function AdminDashboard() {
     const unsubscribeUsers = onSnapshot(
       query(collection(db, "users"), orderBy("createdAt", "desc")),
       (snapshot) => {
-        const userData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        })) as User[];
+        const userData = snapshot.docs
+          .filter(doc => {
+            const data = doc.data();
+            // Filter out placeholder documents and invalid users
+            return data.firstName && data.surname && data.email && !data._placeholder;
+          })
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+          })) as User[];
         setUsers(userData);
-        console.log("Users updated:", userData.length, "users");
+        console.log("Users updated:", userData.length, "valid users");
       }
     );
 
@@ -176,12 +182,51 @@ export function AdminDashboard() {
   const uniqueWings = Array.from(new Set(rooms?.map(room => room.wing).filter(Boolean) ?? [])).sort();
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
-        <p className="text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
+      {/* Navigation */}
+      <nav className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Building className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white drop-shadow-lg">
+                  🎓 REGISTRATION MANAGEMENT SYSTEM
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Link href="/">
+                <Button
+                  variant="default"
+                  className="px-6 py-3 font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  👤 Register User
+                </Button>
+              </Link>
+              <Button
+                variant="secondary"
+                className="px-6 py-3 font-semibold transition-all duration-300 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                ⚙️ Admin Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Header */}
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
+            <p className="text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
+          </div>
 
       {/* Total Users Card */}
       <div className="max-w-sm">
@@ -424,6 +469,8 @@ export function AdminDashboard() {
       )}
 
       {/* Details view moved to dedicated route */}
+        </div>
+      </div>
     </div>
   );
 }

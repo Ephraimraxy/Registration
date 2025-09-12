@@ -147,7 +147,10 @@ export const updateAdminStats = async () => {
     ]);
     
     const stats = {
-      totalStudents: usersSnapshot.size,
+      totalStudents: usersSnapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.firstName && data.surname && data.email && !data._placeholder;
+      }).length,
       availableRooms: roomsSnapshot.docs.filter(doc => doc.data().availableBeds > 0).length,
       assignedTags: tagsSnapshot.docs.filter(doc => doc.data().isAssigned).length,
       availableTags: tagsSnapshot.docs.filter(doc => !doc.data().isAssigned).length,

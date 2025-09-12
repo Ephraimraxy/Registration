@@ -119,6 +119,7 @@ export function exportUsersToExcel(users: any[]): void {
       'Gender': user.gender || '',
       'Phone': user.phone || '',
       'Email': user.email || '',
+      'NIN': user.nin || 'Not provided',
       'State of Origin': user.stateOfOrigin || '',
       'LGA': user.lga || '',
       'Room Number': user.roomNumber || 'Not assigned',
@@ -137,6 +138,7 @@ export function exportUsersToExcel(users: any[]): void {
       { wch: 8 },  // Gender
       { wch: 15 }, // Phone
       { wch: 25 }, // Email
+      { wch: 15 }, // NIN
       { wch: 20 }, // State of Origin
       { wch: 20 }, // LGA
       { wch: 12 }, // Room Number

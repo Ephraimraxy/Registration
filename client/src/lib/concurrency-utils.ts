@@ -60,10 +60,23 @@ export async function safeAssignRoomAndTag(
           throw new Error("No available tags");
         }
 
-        // Step 3: Create user with assignments
+        // Step 3: Validate user data before creating
+        if (!userData.firstName || !userData.surname || !userData.email || !userData.phone) {
+          throw new Error("Invalid user data: missing required fields");
+        }
+
+        // Step 4: Create user with assignments
         const userRef = doc(collection(db, "users"));
         const finalUserData = {
-          ...userData,
+          firstName: userData.firstName?.trim() || "",
+          surname: userData.surname?.trim() || "",
+          middleName: userData.middleName?.trim() || "",
+          dob: userData.dob || "",
+          gender: userData.gender || "",
+          phone: userData.phone?.trim() || "",
+          email: userData.email?.trim() || "",
+          stateOfOrigin: userData.stateOfOrigin?.trim() || "",
+          lga: userData.lga?.trim() || "",
           roomNumber: roomAssignment.roomNumber,
           tagNumber: tagAssignment.tagNumber,
           wing: roomAssignment.wing,

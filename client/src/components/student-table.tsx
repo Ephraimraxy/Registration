@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap, User as UserIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap, User as UserIcon, Trash, Users } from "lucide-react";
 import type { User } from "@shared/schema";
-import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +24,13 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deleteProgress, setDeleteProgress] = useState(0);
   const [deleteStatus, setDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  
+  // Bulk delete state
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
+  const [bulkDeleteStatus, setBulkDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
+  
   const { toast } = useToast();
 
   const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
@@ -132,6 +140,126 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
     }
   };
 
+  // Bulk delete functions
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    const newSelected = new Set(selectedUsers);
+    if (checked) {
+      newSelected.add(userId);
+    } else {
+      newSelected.delete(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allUserIds = new Set(users.map(user => user.id));
+      setSelectedUsers(allUserIds);
+    } else {
+      setSelectedUsers(new Set());
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.size === 0) return;
+
+    setBulkDeleteStatus('processing');
+    setBulkDeleteProgress(0);
+    setBulkDeleteCount(0);
+
+    try {
+      const selectedUsersList = users.filter(user => selectedUsers.has(user.id));
+      const totalUsers = selectedUsersList.length;
+      let deletedCount = 0;
+
+      // Process users in batches to avoid Firebase limits
+      const batchSize = 10;
+      for (let i = 0; i < selectedUsersList.length; i += batchSize) {
+        const batch = selectedUsersList.slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (user) => {
+          if (!user.id) return;
+
+          await runTransaction(db, async (transaction) => {
+            // Free up the room bed
+            if (user.roomNumber) {
+              const roomsQuery = query(
+                collection(db, "rooms"),
+                where("roomNumber", "==", user.roomNumber)
+              );
+              const roomsSnapshot = await getDocs(roomsQuery);
+              
+              if (!roomsSnapshot.empty) {
+                const roomDoc = roomsSnapshot.docs[0];
+                const roomData = roomDoc.data();
+                transaction.update(roomDoc.ref, {
+                  availableBeds: roomData.availableBeds + 1,
+                });
+              }
+            }
+
+            // Free up the tag
+            if (user.tagNumber) {
+              const tagsQuery = query(
+                collection(db, "tags"),
+                where("tagNumber", "==", user.tagNumber)
+              );
+              const tagsSnapshot = await getDocs(tagsQuery);
+              
+              if (!tagsSnapshot.empty) {
+                const tagDoc = tagsSnapshot.docs[0];
+                transaction.update(tagDoc.ref, {
+                  isAssigned: false,
+                  assignedUserId: null,
+                });
+              }
+            }
+
+            // Delete the user
+            transaction.delete(doc(db, "users", user.id));
+          });
+
+          deletedCount++;
+          setBulkDeleteCount(deletedCount);
+          setBulkDeleteProgress((deletedCount / totalUsers) * 100);
+        }));
+      }
+
+      setBulkDeleteStatus('success');
+      setSelectedUsers(new Set());
+      
+      toast({
+        title: "✅ Bulk Delete Successful",
+        description: `Successfully deleted ${deletedCount} users and freed up their rooms and tags.`,
+        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
+      });
+
+      // Reset after success
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Error in bulk delete:", error);
+      setBulkDeleteStatus('error');
+      toast({
+        title: "❌ Bulk Delete Failed",
+        description: error.message || "Failed to delete selected users. Please try again.",
+        variant: "destructive",
+        className: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/20 dark:text-red-400",
+      });
+      
+      // Reset after error
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+      }, 3000);
+    }
+  };
+
   const getInitials = (firstName: string, surname: string) => {
     const first = firstName?.charAt(0) || '';
     const last = surname?.charAt(0) || '';
@@ -165,13 +293,81 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Users Registration</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Users Registration</CardTitle>
+          {selectedUsers.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedUsers.size} selected
+              </span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    disabled={bulkDeleteStatus === 'processing'}
+                  >
+                    {bulkDeleteStatus === 'processing' ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Trash className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Selected Users</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedUsers.size} selected users? 
+                      This action will free up their assigned rooms and tags. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}>
+                      Delete {selectedUsers.size} Users
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+        {bulkDeleteStatus === 'processing' && (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>Deleting users...</span>
+              <span>{bulkDeleteCount} / {selectedUsers.size}</span>
+            </div>
+            <Progress value={bulkDeleteProgress} className="h-2" />
+          </div>
+        )}
+        {bulkDeleteStatus === 'success' && (
+          <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400">
+            <CheckCircle className="h-4 w-4" />
+            <span className="text-sm">Bulk delete completed successfully!</span>
+          </div>
+        )}
+        {bulkDeleteStatus === 'error' && (
+          <div className="mt-4 flex items-center gap-2 text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">Bulk delete failed. Please try again.</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
+                  <Checkbox
+                    checked={selectedUsers.size === users.length && users.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   User
                 </th>
@@ -183,6 +379,9 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Tag
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  NIN
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   State
@@ -208,9 +407,16 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                       deletingUserId === user.id 
                         ? 'bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500 animate-pulse' 
                         : 'hover:shadow-md'
-                    }`} 
+                    } ${selectedUsers.has(user.id) ? 'bg-blue-50 dark:bg-blue-950/20' : ''}`} 
                     data-testid={`row-user-${user.id}`}
                   >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedUsers.has(user.id)}
+                        onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Avatar className="h-10 w-10">
@@ -242,6 +448,9 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-testid={`text-tag-${user.id}`}>
                       {user.tagNumber || 'Not assigned'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-mono" data-testid={`text-nin-${user.id}`}>
+                      {user.nin || 'Not provided'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-testid={`text-state-${user.id}`}>
                       {user.stateOfOrigin}

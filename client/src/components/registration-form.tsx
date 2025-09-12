@@ -338,6 +338,30 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         </FormItem>
                       )}
                     />
+                    
+                    <FormField
+                      control={form.control}
+                      name="nin"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>National Identification Number (NIN)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="12345678901" 
+                              maxLength={11}
+                              {...field} 
+                              data-testid="input-nin"
+                              onChange={(e) => {
+                                // Only allow digits
+                                const value = e.target.value.replace(/\D/g, '');
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </div>
 

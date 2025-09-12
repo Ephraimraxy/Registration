@@ -30,17 +30,29 @@ export function generateUserDetailsPDF(user: User): void {
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     
+    // Helper function to safely format dates
+    const formatDate = (date: any): string => {
+      if (!date) return 'Not provided';
+      try {
+        if (date instanceof Date) return date.toLocaleDateString();
+        return new Date(date).toLocaleDateString();
+      } catch {
+        return 'Invalid date';
+      }
+    };
+    
     const details = [
-      [`Full Name:`, `${user.firstName} ${user.middleName || ''} ${user.surname}`.trim()],
-      [`Date of Birth:`, new Date(user.dob).toLocaleDateString()],
-      [`Gender:`, user.gender],
-      [`Phone Number:`, user.phone],
-      [`Email Address:`, user.email],
-      [`State of Origin:`, user.stateOfOrigin],
-      [`Local Government Area:`, user.lga],
+      [`Full Name:`, `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided'],
+      [`Date of Birth:`, formatDate(user.dob)],
+      [`Gender:`, user.gender || 'Not provided'],
+      [`Phone Number:`, user.phone || 'Not provided'],
+      [`Email Address:`, user.email || 'Not provided'],
+      [`National ID (NIN):`, user.nin || 'Not provided'],
+      [`State of Origin:`, user.stateOfOrigin || 'Not provided'],
+      [`Local Government Area:`, user.lga || 'Not provided'],
       [`Room Number:`, user.roomNumber || 'Not assigned'],
       [`Tag Number:`, user.tagNumber || 'Not assigned'],
-      [`Registration Date:`, user.createdAt.toLocaleDateString()],
+      [`Registration Date:`, formatDate(user.createdAt)],
     ];
     
     let yPosition = 65;
@@ -69,6 +81,10 @@ export function generateUserDetailsPDF(user: User): void {
 
 export function exportUsersToPDF(users: User[]): void {
   try {
+    if (!users || users.length === 0) {
+      throw new Error('No users data available for export');
+    }
+
     const doc = new jsPDF('landscape', 'mm', 'a4');
     
     // Title
@@ -80,25 +96,37 @@ export function exportUsersToPDF(users: User[]): void {
     // Subtitle
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
-    doc.text('Complete Users Registration Report', 20, 30);
+    doc.text(`Complete Users Registration Report (${users.length} users)`, 20, 30);
     
-    // Prepare table data
+    // Helper function to safely format dates
+    const formatDate = (date: any): string => {
+      if (!date) return 'Not provided';
+      try {
+        if (date instanceof Date) return date.toLocaleDateString();
+        return new Date(date).toLocaleDateString();
+      } catch {
+        return 'Invalid date';
+      }
+    };
+    
+    // Prepare table data with null safety
     const tableData = users.map((user, index) => [
       index + 1,
-      `${user.firstName} ${user.middleName || ''} ${user.surname}`.trim(),
-      user.gender,
-      user.phone,
-      user.email,
-      user.stateOfOrigin,
-      user.lga,
+      `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
+      user.gender || 'Not provided',
+      user.phone || 'Not provided',
+      user.email || 'Not provided',
+      user.nin || 'Not provided',
+      user.stateOfOrigin || 'Not provided',
+      user.lga || 'Not provided',
       user.roomNumber || 'Not assigned',
       user.tagNumber || 'Not assigned',
-      user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
+      formatDate(user.createdAt),
     ]);
     
     // Generate table
     doc.autoTable({
-      head: [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'State', 'LGA', 'Room', 'Tag', 'Reg. Date']],
+      head: [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'NIN', 'State', 'LGA', 'Room', 'Tag', 'Reg. Date']],
       body: tableData,
       startY: 40,
       styles: {

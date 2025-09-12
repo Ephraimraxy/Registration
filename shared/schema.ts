@@ -10,6 +10,7 @@ export const userSchema = z.object({
   gender: z.enum(["Male", "Female"]),
   phone: z.string().min(10, "Valid phone number is required"),
   email: z.string().email("Valid email is required"),
+  nin: z.string().length(11, "NIN must be exactly 11 digits").regex(/^\d{11}$/, "NIN must contain only numbers"),
   stateOfOrigin: z.string().min(1, "State of origin is required"),
   lga: z.string().min(1, "LGA is required"),
   roomNumber: z.string().optional(),

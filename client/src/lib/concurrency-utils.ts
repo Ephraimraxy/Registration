@@ -186,11 +186,10 @@ async function findAndReserveRoom(
  * Finds and reserves a tag atomically within a transaction
  */
 async function findAndReserveTag(transaction: any): Promise<TagAssignment | null> {
-  // Query for unassigned tags ordered by tagNumber to ensure serial assignment
+  // Query for unassigned tags
   const tagsQuery = query(
     collection(db, "tags"),
-    where("isAssigned", "==", false),
-    orderBy("tagNumber", "asc")
+    where("isAssigned", "==", false)
   );
   
   const tagsSnapshot = await getDocs(tagsQuery);
@@ -199,20 +198,24 @@ async function findAndReserveTag(transaction: any): Promise<TagAssignment | null
     return null;
   }
 
-  // Get the first available tag (now guaranteed to be lowest number)
-  const tagDoc = tagsSnapshot.docs[0];
-  const tagData = tagDoc.data();
-  
-  // Double-check availability within transaction
-  if (!tagData.isAssigned) {
-    return {
-      tagId: tagDoc.id,
-      tagNumber: tagData.tagNumber,
-      isAssigned: tagData.isAssigned,
-    };
+  // Sort tags by tagNumber to ensure serial assignment
+  const availableTags = tagsSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(tag => !tag.isAssigned)
+    .sort((a, b) => a.tagNumber.localeCompare(b.tagNumber, undefined, { numeric: true }));
+
+  if (availableTags.length === 0) {
+    return null;
   }
 
-  return null;
+  // Get the first available tag (lowest number)
+  const tag = availableTags[0];
+  
+  return {
+    tagId: tag.id,
+    tagNumber: tag.tagNumber,
+    isAssigned: tag.isAssigned,
+  };
 }
 
 /**

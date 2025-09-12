@@ -33,6 +33,8 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
   const handleDelete = async (user: User) => {
     if (!user.id) return;
     
+    const fullName = `${user.firstName} ${user.middleName || ''} ${user.surname}`.trim();
+    
     setDeletingUserId(user.id);
     setDeleteStatus('processing');
     setDeleteProgress(0);

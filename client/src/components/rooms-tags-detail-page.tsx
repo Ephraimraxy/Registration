@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft, 
   Bed, 
@@ -16,11 +14,9 @@ import {
   XCircle,
   AlertCircle,
   Building,
-  Hash,
-  Trash,
-  Loader2
+  Hash
 } from "lucide-react";
-import { collection, onSnapshot, query, where, orderBy, writeBatch, doc, deleteDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { Room, Tag as TagType, User as UserType } from "@shared/schema";
@@ -34,12 +30,6 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
   const [tags, setTags] = useState<TagType[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Bulk delete state
-  const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
-  const [bulkDeleteStatus, setBulkDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
-  const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
-  const [bulkDeleteType, setBulkDeleteType] = useState<'tags' | 'rooms' | null>(null);
   
   const { toast } = useToast();
 
@@ -102,142 +92,6 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
     return users.find(user => user.tagNumber === tagNumber);
   };
 
-  // Bulk delete functions
-  const handleBulkDeleteTags = async () => {
-    const availableTags = tags.filter(tag => !tag.isAssigned);
-    if (availableTags.length === 0) {
-      toast({
-        title: "No Available Tags",
-        description: "There are no available tags to delete.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setBulkDeleteType('tags');
-    setBulkDeleteStatus('processing');
-    setBulkDeleteProgress(0);
-    setBulkDeleteCount(0);
-
-    try {
-      let deletedCount = 0;
-
-      // Process in batches of 500 (Firebase limit)
-      const batchSize = 500;
-      for (let i = 0; i < availableTags.length; i += batchSize) {
-        const tagBatch = availableTags.slice(i, i + batchSize);
-        const batch = writeBatch(db);
-        
-        tagBatch.forEach(tag => {
-          batch.delete(doc(db, "tags", tag.id));
-        });
-
-        await batch.commit();
-        deletedCount += tagBatch.length;
-        setBulkDeleteCount(deletedCount);
-        setBulkDeleteProgress((deletedCount / availableTags.length) * 100);
-      }
-
-      setBulkDeleteStatus('success');
-      toast({
-        title: "✅ Tags Deleted Successfully",
-        description: `Successfully deleted ${deletedCount} available tags.`,
-        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
-      });
-
-      // Reset after success
-      setTimeout(() => {
-        setBulkDeleteStatus('idle');
-        setBulkDeleteProgress(0);
-        setBulkDeleteCount(0);
-        setBulkDeleteType(null);
-      }, 2000);
-
-    } catch (error: any) {
-      console.error("Error deleting tags:", error);
-      setBulkDeleteStatus('error');
-      toast({
-        title: "❌ Delete Failed",
-        description: error.message || "Failed to delete tags. Please try again.",
-        variant: "destructive",
-      });
-      
-      setTimeout(() => {
-        setBulkDeleteStatus('idle');
-        setBulkDeleteProgress(0);
-        setBulkDeleteCount(0);
-        setBulkDeleteType(null);
-      }, 3000);
-    }
-  };
-
-  const handleBulkDeleteRooms = async () => {
-    const availableRooms = rooms.filter(room => room.availableBeds > 0);
-    if (availableRooms.length === 0) {
-      toast({
-        title: "No Available Rooms",
-        description: "There are no available rooms to delete.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setBulkDeleteType('rooms');
-    setBulkDeleteStatus('processing');
-    setBulkDeleteProgress(0);
-    setBulkDeleteCount(0);
-
-    try {
-      let deletedCount = 0;
-
-      // Process in batches of 500 (Firebase limit)
-      const batchSize = 500;
-      for (let i = 0; i < availableRooms.length; i += batchSize) {
-        const roomBatch = availableRooms.slice(i, i + batchSize);
-        const batch = writeBatch(db);
-        
-        roomBatch.forEach(room => {
-          batch.delete(doc(db, "rooms", room.id));
-        });
-
-        await batch.commit();
-        deletedCount += roomBatch.length;
-        setBulkDeleteCount(deletedCount);
-        setBulkDeleteProgress((deletedCount / availableRooms.length) * 100);
-      }
-
-      setBulkDeleteStatus('success');
-      toast({
-        title: "✅ Rooms Deleted Successfully",
-        description: `Successfully deleted ${deletedCount} available rooms.`,
-        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
-      });
-
-      // Reset after success
-      setTimeout(() => {
-        setBulkDeleteStatus('idle');
-        setBulkDeleteProgress(0);
-        setBulkDeleteCount(0);
-        setBulkDeleteType(null);
-      }, 2000);
-
-    } catch (error: any) {
-      console.error("Error deleting rooms:", error);
-      setBulkDeleteStatus('error');
-      toast({
-        title: "❌ Delete Failed",
-        description: error.message || "Failed to delete rooms. Please try again.",
-        variant: "destructive",
-      });
-      
-      setTimeout(() => {
-        setBulkDeleteStatus('idle');
-        setBulkDeleteProgress(0);
-        setBulkDeleteCount(0);
-        setBulkDeleteType(null);
-      }, 3000);
-    }
-  };
 
   // Helper function to get room occupancy status
   const getRoomOccupancyStatus = (room: Room) => {
@@ -360,135 +214,6 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
           </Card>
         </div>
 
-        {/* Bulk Delete Controls */}
-        <div className="mb-8">
-          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-3">
-                <Trash className="h-6 w-6" />
-                🗑️ Bulk Delete Operations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Delete Available Tags */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Tags</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {tags.filter(tag => !tag.isAssigned).length} available tags
-                      </p>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          disabled={bulkDeleteStatus === 'processing' || tags.filter(tag => !tag.isAssigned).length === 0}
-                        >
-                          {bulkDeleteStatus === 'processing' && bulkDeleteType === 'tags' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Trash className="h-4 w-4 mr-2" />
-                          )}
-                          Delete All Available Tags
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete All Available Tags</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete all {tags.filter(tag => !tag.isAssigned).length} available tags? 
-                            This action cannot be undone and will permanently remove these tags from the system.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleBulkDeleteTags}>
-                            Delete All Available Tags
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-
-                {/* Delete Available Rooms */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Rooms</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {rooms.filter(room => room.availableBeds > 0).length} available rooms
-                      </p>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          disabled={bulkDeleteStatus === 'processing' || rooms.filter(room => room.availableBeds > 0).length === 0}
-                        >
-                          {bulkDeleteStatus === 'processing' && bulkDeleteType === 'rooms' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Trash className="h-4 w-4 mr-2" />
-                          )}
-                          Delete All Available Rooms
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete All Available Rooms</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete all {rooms.filter(room => room.availableBeds > 0).length} available rooms? 
-                            This action cannot be undone and will permanently remove these rooms from the system.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleBulkDeleteRooms}>
-                            Delete All Available Rooms
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Indicator */}
-              {bulkDeleteStatus === 'processing' && (
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">
-                      Deleting {bulkDeleteType}...
-                    </span>
-                    <span className="text-muted-foreground">
-                      {bulkDeleteCount} items processed
-                    </span>
-                  </div>
-                  <Progress value={bulkDeleteProgress} className="h-3" />
-                </div>
-              )}
-
-              {bulkDeleteStatus === 'success' && (
-                <div className="mt-6 flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">Bulk delete completed successfully!</span>
-                </div>
-              )}
-
-              {bulkDeleteStatus === 'error' && (
-                <div className="mt-6 flex items-center gap-2 text-red-600 dark:text-red-400">
-                  <AlertCircle className="h-5 w-5" />
-                  <span className="font-medium">Bulk delete failed. Please try again.</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

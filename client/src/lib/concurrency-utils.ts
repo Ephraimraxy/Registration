@@ -75,6 +75,7 @@ export async function safeAssignRoomAndTag(
           gender: userData.gender || "",
           phone: userData.phone?.trim() || "",
           email: userData.email?.trim() || "",
+          nin: userData.nin?.trim() || "",
           stateOfOrigin: userData.stateOfOrigin?.trim() || "",
           lga: userData.lga?.trim() || "",
           roomNumber: roomAssignment.roomNumber,

@@ -1,0 +1,5 @@
+[33m5be4101[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix NIN field database integration and reorganize bulk delete functionality
+[33mc4a7e18[m Add NIN field with 11-digit validation and navigation header to admin dashboard
+[33m2b80df6[m fix: resolve delete error and Firebase index issue for tag assignment
+[33mc2fc523[m fix(build): add jspdf-autotable to client dependencies to fix Netlify build
+[33ma58808f[m fix(tags): make tag assignment truly serial by ordering by tagNumber

@@ -242,6 +242,14 @@ export function CardPreviewPage({ user, onBack, onPrint }: CardPreviewPageProps)
                       </div>
 
                       <div className="flex items-center gap-3">
+                        <IdCard className="h-5 w-5 text-amber-600" />
+                        <div>
+                          <div className="text-sm text-gray-500">National ID (NIN)</div>
+                          <div className="font-semibold">{user.nin || 'Not provided'}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-purple-600" />
                         <div>
                           <div className="text-sm text-gray-500">Email Address</div>

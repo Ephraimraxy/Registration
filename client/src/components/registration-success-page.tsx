@@ -196,6 +196,15 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
+                        <IdCard className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        <div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">National ID (NIN)</span>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {user.nin || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         <div>
                           <span className="text-sm text-gray-600 dark:text-gray-400">Date of Birth</span>

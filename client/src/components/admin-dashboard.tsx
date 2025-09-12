@@ -15,6 +15,7 @@ import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
+import { RegistrationSuccessPage } from "./registration-success-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,7 @@ export function AdminDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
   
@@ -177,6 +179,10 @@ export function AdminDashboard() {
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
+  };
+
+  const handleViewDetails = (user: User) => {
+    setViewingUser(user);
   };
 
   // Bulk delete functions for tags and rooms
@@ -738,6 +744,7 @@ export function AdminDashboard() {
       <StudentTable 
         users={filteredUsers} 
         onEdit={handleEdit}
+        onViewDetails={handleViewDetails}
       />
 
       {/* Modals */}
@@ -753,6 +760,17 @@ export function AdminDashboard() {
           user={editingUser}
           onClose={() => setEditingUser(null)}
         />
+      )}
+
+      {viewingUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+            <RegistrationSuccessPage
+              user={viewingUser}
+              onBack={() => setViewingUser(null)}
+            />
+          </div>
+        </div>
       )}
 
       {/* Details view moved to dedicated route */}

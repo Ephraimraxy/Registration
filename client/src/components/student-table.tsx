@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap, User as UserIcon, Trash, Users } from "lucide-react";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle, X, Shield, Zap, User as UserIcon, Trash, Users, Eye } from "lucide-react";
 import type { User } from "@shared/schema";
 import { doc, deleteDoc, updateDoc, query, where, collection, getDocs, runTransaction, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -15,11 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 interface StudentTableProps {
   users: User[];
   onEdit: (user: User) => void;
+  onViewDetails: (user: User) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export function StudentTable({ users, onEdit }: StudentTableProps) {
+export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deleteProgress, setDeleteProgress] = useState(0);
@@ -460,6 +461,16 @@ export function StudentTable({ users, onEdit }: StudentTableProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewDetails(user)}
+                          data-testid={`button-view-${user.id}`}
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300 hover:scale-110"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
                         <Button
                           variant="ghost"
                           size="sm"

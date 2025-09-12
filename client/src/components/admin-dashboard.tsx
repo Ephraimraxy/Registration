@@ -139,11 +139,11 @@ export function AdminDashboard() {
   const handleExport = () => {
     try {
       if (exportFormat === 'excel') {
-        exportUsersToExcel(users);
-        toast({
-          title: "Export Successful",
-          description: "Students data has been exported to Excel successfully!",
-        });
+      exportUsersToExcel(users);
+      toast({
+        title: "Export Successful",
+        description: "Students data has been exported to Excel successfully!",
+      });
       } else {
         // Export as PDF - generate single PDF with all users in table format
         exportUsersToPDF(users);

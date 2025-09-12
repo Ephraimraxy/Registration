@@ -109,48 +109,77 @@ export function parseTagsExcel(file: File): Promise<InsertTag[]> {
   });
 }
 
-export function exportUsersToExcel(users: any[]): void {
+export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' = 'full'): void {
   try {
-    const exportData = users.map(user => ({
-      'First Name': user.firstName || '',
-      'Middle Name': user.middleName || '',
-      'Surname': user.surname || '',
-      'Date of Birth': user.dob ? new Date(user.dob).toLocaleDateString() : '',
-      'Gender': user.gender || '',
-      'Phone': user.phone || '',
-      'Email': user.email || '',
-      'NIN': user.nin || 'Not provided',
-      'State of Origin': user.stateOfOrigin || '',
-      'LGA': user.lga || '',
-      'Room Number': user.roomNumber || 'Not assigned',
-      'Tag Number': user.tagNumber || 'Not assigned',
-      'Registration Date': user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
-    }));
+    let exportData;
+    
+    if (exportType === 'summary') {
+      // Summary format - only essential fields
+      exportData = users.map(user => ({
+        'Name': `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim(),
+        'Gender': user.gender || '',
+        'Room Number': user.roomNumber || 'Not assigned',
+        'Tag Number': user.tagNumber || 'Not assigned',
+        'State': user.stateOfOrigin || '',
+        'Phone': user.phone || '',
+        'Email': user.email || '',
+      }));
+    } else {
+      // Full format - all fields
+      exportData = users.map(user => ({
+        'First Name': user.firstName || '',
+        'Middle Name': user.middleName || '',
+        'Surname': user.surname || '',
+        'Date of Birth': user.dob ? new Date(user.dob).toLocaleDateString() : '',
+        'Gender': user.gender || '',
+        'Phone': user.phone || '',
+        'Email': user.email || '',
+        'NIN': user.nin || 'Not provided',
+        'State of Origin': user.stateOfOrigin || '',
+        'LGA': user.lga || '',
+        'Room Number': user.roomNumber || 'Not assigned',
+        'Tag Number': user.tagNumber || 'Not assigned',
+        'Registration Date': user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
+      }));
+    }
     
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     
-    // Set column widths
-    const colWidths = [
-      { wch: 15 }, // First Name
-      { wch: 15 }, // Middle Name
-      { wch: 15 }, // Surname
-      { wch: 12 }, // Date of Birth
-      { wch: 8 },  // Gender
-      { wch: 15 }, // Phone
-      { wch: 25 }, // Email
-      { wch: 15 }, // NIN
-      { wch: 20 }, // State of Origin
-      { wch: 20 }, // LGA
-      { wch: 12 }, // Room Number
-      { wch: 12 }, // Tag Number
-      { wch: 15 }, // Registration Date
-    ];
+    // Set column widths based on export type
+    let colWidths;
+    if (exportType === 'summary') {
+      colWidths = [
+        { wch: 25 }, // Name
+        { wch: 8 },  // Gender
+        { wch: 12 }, // Room Number
+        { wch: 12 }, // Tag Number
+        { wch: 15 }, // State
+        { wch: 15 }, // Phone
+        { wch: 25 }, // Email
+      ];
+    } else {
+      colWidths = [
+        { wch: 15 }, // First Name
+        { wch: 15 }, // Middle Name
+        { wch: 15 }, // Surname
+        { wch: 12 }, // Date of Birth
+        { wch: 8 },  // Gender
+        { wch: 15 }, // Phone
+        { wch: 25 }, // Email
+        { wch: 15 }, // NIN
+        { wch: 20 }, // State of Origin
+        { wch: 20 }, // LGA
+        { wch: 12 }, // Room Number
+        { wch: 12 }, // Tag Number
+        { wch: 15 }, // Registration Date
+      ];
+    }
     worksheet['!cols'] = colWidths;
     
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
     
-    const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `users_export_${exportType}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   } catch (error) {
     console.error('Error exporting to Excel:', error);

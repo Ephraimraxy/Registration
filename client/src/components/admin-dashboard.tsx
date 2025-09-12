@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useLocation, Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2 } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch } from "firebase/firestore";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
@@ -33,6 +34,7 @@ export function AdminDashboard() {
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
+  const [exportType, setExportType] = useState<'full' | 'summary'>('full');
   
   // Bulk delete state for tags and rooms
   const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
@@ -155,17 +157,17 @@ export function AdminDashboard() {
   const handleExport = () => {
     try {
       if (exportFormat === 'excel') {
-      exportUsersToExcel(users);
-      toast({
-        title: "Export Successful",
-        description: "Students data has been exported to Excel successfully!",
-      });
-      } else {
-        // Export as PDF - generate single PDF with all users in table format
-        exportUsersToPDF(users);
+        exportUsersToExcel(users, exportType);
         toast({
           title: "Export Successful",
-          description: `PDF report generated for ${users.length} students successfully!`,
+          description: `Students data has been exported to Excel (${exportType} format) successfully!`,
+        });
+      } else {
+        // Export as PDF - generate single PDF with all users in table format
+        exportUsersToPDF(users, exportType);
+        toast({
+          title: "Export Successful",
+          description: `PDF report generated for ${users.length} students (${exportType} format) successfully!`,
         });
       }
     } catch (error: any) {
@@ -417,31 +419,50 @@ export function AdminDashboard() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Tags (Excel)
             </Button>
-            <div className="flex gap-2">
-              <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
-                <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
-                  <SelectValue className="text-gray-900 dark:text-gray-100" />
-                </SelectTrigger>
-                <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                  <SelectItem value="excel" className="hover:bg-green-50 dark:hover:bg-green-900/30 focus:bg-green-100 dark:focus:bg-green-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"></span>
-                      📊 Excel
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="pdf" className="hover:bg-red-50 dark:hover:bg-red-900/30 focus:bg-red-100 dark:focus:bg-red-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-600 shadow-sm"></span>
-                      📄 PDF
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
-              <Download className="mr-2 h-4 w-4" />
-              Export Users
-            </Button>
-          </div>
+            <div className="flex flex-col gap-4">
+              {/* Export Format Selection */}
+              <div className="flex gap-2">
+                <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
+                  <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
+                    <SelectValue className="text-gray-900 dark:text-gray-100" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                    <SelectItem value="excel" className="hover:bg-green-50 dark:hover:bg-green-900/30 focus:bg-green-100 dark:focus:bg-green-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"></span>
+                        📊 Excel
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="pdf" className="hover:bg-red-50 dark:hover:bg-red-900/30 focus:bg-red-100 dark:focus:bg-red-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-600 shadow-sm"></span>
+                        📄 PDF
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Users
+                </Button>
+              </div>
+              
+              {/* Export Type Tabs */}
+              <div className="flex justify-center">
+                <Tabs value={exportType} onValueChange={(value) => setExportType(value as 'full' | 'summary')} className="w-full max-w-md">
+                  <TabsList className="grid w-full grid-cols-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <TabsTrigger value="full" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Full Details
+                    </TabsTrigger>
+                    <TabsTrigger value="summary" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Summary
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

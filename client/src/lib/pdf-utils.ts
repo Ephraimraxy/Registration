@@ -79,7 +79,7 @@ export function generateUserDetailsPDF(user: User): void {
   }
 }
 
-export function exportUsersToPDF(users: User[]): void {
+export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' = 'full'): void {
   try {
     if (!users || users.length === 0) {
       throw new Error('No users data available for export');
@@ -96,7 +96,8 @@ export function exportUsersToPDF(users: User[]): void {
     // Subtitle
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Complete Users Registration Report (${users.length} users)`, 20, 30);
+    const reportType = exportType === 'summary' ? 'Summary' : 'Complete';
+    doc.text(`${reportType} Users Registration Report (${users.length} users)`, 20, 30);
     
     // Helper function to safely format dates
     const formatDate = (date: any): string => {
@@ -109,24 +110,43 @@ export function exportUsersToPDF(users: User[]): void {
       }
     };
     
-    // Prepare table data with null safety
-    const tableData = users.map((user, index) => [
-      index + 1,
-      `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
-      user.gender || 'Not provided',
-      user.phone || 'Not provided',
-      user.email || 'Not provided',
-      user.nin || 'Not provided',
-      user.stateOfOrigin || 'Not provided',
-      user.lga || 'Not provided',
-      user.roomNumber || 'Not assigned',
-      user.tagNumber || 'Not assigned',
-      formatDate(user.createdAt),
-    ]);
+    // Prepare table data with null safety based on export type
+    let tableData, tableHeaders;
+    
+    if (exportType === 'summary') {
+      // Summary format - only essential fields
+      tableData = users.map((user, index) => [
+        index + 1,
+        `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
+        user.gender || 'Not provided',
+        user.roomNumber || 'Not assigned',
+        user.tagNumber || 'Not assigned',
+        user.stateOfOrigin || 'Not provided',
+        user.phone || 'Not provided',
+        user.email || 'Not provided',
+      ]);
+      tableHeaders = [['#', 'Name', 'Gender', 'Room', 'Tag', 'State', 'Phone', 'Email']];
+    } else {
+      // Full format - all fields
+      tableData = users.map((user, index) => [
+        index + 1,
+        `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
+        user.gender || 'Not provided',
+        user.phone || 'Not provided',
+        user.email || 'Not provided',
+        user.nin || 'Not provided',
+        user.stateOfOrigin || 'Not provided',
+        user.lga || 'Not provided',
+        user.roomNumber || 'Not assigned',
+        user.tagNumber || 'Not assigned',
+        formatDate(user.createdAt),
+      ]);
+      tableHeaders = [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'NIN', 'State', 'LGA', 'Room', 'Tag', 'Reg. Date']];
+    }
     
     // Generate table
     doc.autoTable({
-      head: [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'NIN', 'State', 'LGA', 'Room', 'Tag', 'Reg. Date']],
+      head: tableHeaders,
       body: tableData,
       startY: 40,
       styles: {
@@ -145,7 +165,18 @@ export function exportUsersToPDF(users: User[]): void {
       alternateRowStyles: {
         fillColor: [248, 249, 250],
       },
-      columnStyles: {
+      columnStyles: exportType === 'summary' ? {
+        // Summary format column styles
+        0: { halign: 'center', cellWidth: 10 },
+        1: { cellWidth: 40 },
+        2: { halign: 'center', cellWidth: 15 },
+        3: { halign: 'center', cellWidth: 20 },
+        4: { halign: 'center', cellWidth: 20 },
+        5: { cellWidth: 25 },
+        6: { cellWidth: 25 },
+        7: { cellWidth: 40 },
+      } : {
+        // Full format column styles
         0: { halign: 'center', cellWidth: 10 },
         1: { cellWidth: 35 },
         2: { halign: 'center', cellWidth: 15 },
@@ -171,7 +202,7 @@ export function exportUsersToPDF(users: User[]): void {
     }
     
     // Save the PDF
-    const fileName = `users_export_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `users_export_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);

@@ -113,7 +113,7 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
             className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <Download className="mr-2 h-4 w-4" />
-            Download PDF
+            Download {printType === 'full' ? 'Full Details' : 'Summary'} PDF
           </Button>
           <Button
             onClick={handlePrint}
@@ -121,7 +121,7 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
             className="border-blue-300 hover:bg-blue-50 dark:border-blue-600 dark:hover:bg-blue-950/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <Printer className="mr-2 h-4 w-4" />
-            Print Details
+            Print {printType === 'full' ? 'Full Details' : 'Summary'}
           </Button>
           <Button
             onClick={handleNewRegistration}
@@ -133,14 +133,17 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
         </div>
 
         {/* Print Type Toggle */}
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center mb-8">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">
+            📄 Select view type for download/print:
+          </p>
           <Tabs value={printType} onValueChange={(value) => setPrintType(value as 'full' | 'summary')} className="w-full max-w-md">
-            <TabsList className="grid w-full grid-cols-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <TabsTrigger value="full" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg">
+              <TabsTrigger value="full" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white">
                 <FileText className="h-4 w-4" />
                 Full Details
               </TabsTrigger>
-              <TabsTrigger value="summary" className="flex items-center gap-2">
+              <TabsTrigger value="summary" className="flex items-center gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white">
                 <Eye className="h-4 w-4" />
                 Summary
               </TabsTrigger>
@@ -239,9 +242,22 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                       <div className="flex items-center gap-3">
                         <Bed className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         <div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Room Assignment</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Room & Bed Assignment</span>
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            {user.roomNumber || 'Not assigned'}
+                            {user.roomNumber ? (
+                              <>
+                                {user.roomNumber}
+                                {user.bedNumber && (
+                                  <span className="text-sm text-indigo-600 dark:text-indigo-400 ml-2">
+                                    (Bed {user.bedNumber})
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-yellow-600 dark:text-yellow-400">
+                                {user.roomStatus === 'pending' ? '⏳ Pending Assignment' : 'Not assigned'}
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -250,7 +266,13 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                         <div>
                           <span className="text-sm text-gray-600 dark:text-gray-400">Tag Assignment</span>
                           <p className="font-semibold text-gray-900 dark:text-gray-100">
-                            {user.tagNumber || 'Not assigned'}
+                            {user.tagNumber ? (
+                              user.tagNumber
+                            ) : (
+                              <span className="text-yellow-600 dark:text-yellow-400">
+                                {user.tagStatus === 'pending' ? '⏳ Pending Assignment' : 'Not assigned'}
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -295,10 +317,18 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                       <Bed className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-600 dark:text-gray-400">Room & Bed</p>
                       <p className="font-bold text-gray-900 dark:text-gray-100">
-                        {user.roomNumber || 'Not assigned'}
-                        {user.bedNumber && (
-                          <span className="text-sm text-blue-600 dark:text-blue-400 ml-1">
-                            (Bed {user.bedNumber})
+                        {user.roomNumber ? (
+                          <>
+                            {user.roomNumber}
+                            {user.bedNumber && (
+                              <span className="text-sm text-blue-600 dark:text-blue-400 ml-1">
+                                (Bed {user.bedNumber})
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-yellow-600 dark:text-yellow-400">
+                            {user.roomStatus === 'pending' ? '⏳ Pending Assignment' : 'Not assigned'}
                           </span>
                         )}
                       </p>
@@ -307,7 +337,13 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                       <Tag className="h-6 w-6 text-pink-600 dark:text-pink-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-600 dark:text-gray-400">Tag</p>
                       <p className="font-bold text-gray-900 dark:text-gray-100">
-                        {user.tagNumber || 'Not assigned'}
+                        {user.tagNumber ? (
+                          user.tagNumber
+                        ) : (
+                          <span className="text-yellow-600 dark:text-yellow-400">
+                            {user.tagStatus === 'pending' ? '⏳ Pending Assignment' : 'Not assigned'}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

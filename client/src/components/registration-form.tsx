@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { validateRegistrationData } from "@/lib/firebase";
-import { safeAssignRoomAndTag, validateAvailability } from "@/lib/concurrency-utils";
+import { flexibleAssignRoomAndTag, validateAvailability } from "@/lib/flexible-registration-utils";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -86,16 +86,22 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       const availability = await validateAvailability(gender);
       setAvailabilityStatus(availability);
       
-      if (!availability.hasAvailableRooms) {
+      if (!availability.hasAvailableRooms && !availability.hasAvailableTags) {
         toast({
-          title: "No Available Rooms",
-          description: `No rooms available for ${gender} students at the moment.`,
+          title: "No Resources Available",
+          description: "No rooms or tags available at the moment. Registration will be pending until resources are added.",
+          variant: "destructive",
+        });
+      } else if (!availability.hasAvailableRooms) {
+        toast({
+          title: "No Rooms Available",
+          description: `No rooms available for ${gender} students. Room will be assigned when available.`,
           variant: "destructive",
         });
       } else if (!availability.hasAvailableTags) {
         toast({
-          title: "No Available Tags",
-          description: "No tags available at the moment.",
+          title: "No Tags Available",
+          description: "No tags available at the moment. Tag will be assigned when available.",
           variant: "destructive",
         });
       }
@@ -140,10 +146,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         return;
       }
 
-      // Use shared safe assignment utility (handles transactions & concurrency)
+      // Use flexible assignment utility (allows partial assignments)
       setRegistrationStatus('finding-room');
       setRegistrationProgress(30);
-      const result = await safeAssignRoomAndTag(data);
+      const result = await flexibleAssignRoomAndTag(data);
       if (!result.success || !result.userData) {
         throw new Error(result.error || 'Registration failed');
       }
@@ -163,9 +169,26 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       
       onSuccess(newUser);
       
+      // Determine success message based on what was assigned
+      const hasRoom = result.roomAssignment;
+      const hasTag = result.tagAssignment;
+      const pendingRoom = result.pendingAssignments?.room;
+      const pendingTag = result.pendingAssignments?.tag;
+      
+      let description = "Registration successful! ";
+      if (hasRoom && hasTag) {
+        description += "Room and tag assigned successfully!";
+      } else if (hasRoom && pendingTag) {
+        description += "Room assigned! Tag will be assigned when available.";
+      } else if (hasTag && pendingRoom) {
+        description += "Tag assigned! Room will be assigned when available.";
+      } else if (pendingRoom && pendingTag) {
+        description += "Both room and tag will be assigned when available.";
+      }
+      
       toast({
         title: "Registration Successful",
-        description: "Room and tag have been assigned successfully!",
+        description,
       });
       
       form.reset();
@@ -477,28 +500,41 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                         <div>
                           <div className="font-semibold text-gray-800 dark:text-gray-200">
-                            {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '❌ No Rooms'}
+                            {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '⏳ Rooms Pending'}
                           </div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {availabilityStatus.availableRoomCount} beds available
+                            {availabilityStatus.hasAvailableRooms 
+                              ? `${availabilityStatus.availableRoomCount} beds available`
+                              : 'Will be assigned when available'
+                            }
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                         <div>
                           <div className="font-semibold text-gray-800 dark:text-gray-200">
-                            {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '❌ No Tags'}
+                            {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '⏳ Tags Pending'}
                           </div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {availabilityStatus.availableTagCount} tags available
+                            {availabilityStatus.hasAvailableTags 
+                              ? `${availabilityStatus.availableTagCount} tags available`
+                              : 'Will be assigned when available'
+                            }
                           </div>
                         </div>
                       </div>
                     </div>
+                    {(!availabilityStatus.hasAvailableRooms || !availabilityStatus.hasAvailableTags) && (
+                      <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                          💡 <strong>Flexible Registration:</strong> You can still register! Missing resources will be assigned automatically when they become available.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -562,3 +598,4 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     </>
   );
 }
+

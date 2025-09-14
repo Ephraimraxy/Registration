@@ -16,6 +16,8 @@ export const userSchema = z.object({
   roomNumber: z.string().optional(),
   bedNumber: z.string().optional(),
   tagNumber: z.string().optional(),
+  roomStatus: z.enum(["assigned", "pending"]).optional(),
+  tagStatus: z.enum(["assigned", "pending"]).optional(),
   createdAt: z.date(),
 });
 

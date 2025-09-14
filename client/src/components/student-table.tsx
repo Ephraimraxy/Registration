@@ -559,10 +559,29 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-testid={`text-room-${user.id}`}>
-                      {user.roomNumber || 'Not assigned'}
+                      {user.roomNumber ? (
+                        <>
+                          {user.roomNumber}
+                          {user.bedNumber && (
+                            <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">
+                              (Bed {user.bedNumber})
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-yellow-600 dark:text-yellow-400 text-xs">
+                          {user.roomStatus === 'pending' ? '⏳ Pending' : 'Not assigned'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-testid={`text-tag-${user.id}`}>
-                      {user.tagNumber || 'Not assigned'}
+                      {user.tagNumber ? (
+                        user.tagNumber
+                      ) : (
+                        <span className="text-yellow-600 dark:text-yellow-400 text-xs">
+                          {user.tagStatus === 'pending' ? '⏳ Pending' : 'Not assigned'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-mono" data-testid={`text-nin-${user.id}`}>
                       {user.nin || 'Not provided'}

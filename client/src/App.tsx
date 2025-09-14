@@ -5,12 +5,16 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initializeDatabase } from "@/lib/firebase";
+import { usePendingAssignments } from "@/hooks/use-pending-assignments";
 import Home from "@/pages/home";
 import { RoomsTagsDetailPage } from "@/components/rooms-tags-detail-page";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  // Start monitoring for pending assignments
+  usePendingAssignments();
+  
   return (
     <Switch>
       <Route path="/" component={Home} />

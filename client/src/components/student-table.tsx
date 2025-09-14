@@ -590,6 +590,7 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                           size="sm"
                           onClick={() => onEdit(user)}
                           data-testid={`button-edit-${user.id}`}
+                          className="text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-300 hover:scale-110"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

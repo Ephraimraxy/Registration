@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText } from "lucide-react";
-import { collection, onSnapshot, query, where, orderBy, doc, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { db } from "@/lib/firebase";
@@ -49,6 +49,59 @@ export function AdminDashboard() {
   const [stateFilter, setStateFilter] = useState("all");
   
   const { toast } = useToast();
+
+  // Force refresh function
+  const refreshData = async () => {
+    try {
+      const [usersSnapshot, roomsSnapshot, tagsSnapshot] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "rooms")),
+        getDocs(collection(db, "tags")),
+      ]);
+
+      const userData = usersSnapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.firstName && data.surname && data.email && !data._placeholder;
+        })
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        })) as User[];
+
+      const roomData = roomsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Room[];
+
+      const tagData = tagsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as TagType[];
+
+      setUsers(userData);
+      setRooms(roomData);
+      setTags(tagData);
+      
+      console.log("Data refreshed manually");
+      console.log("Users:", userData.length);
+      console.log("Rooms:", roomData.length);
+      console.log("Tags:", tagData.length);
+      
+      toast({
+        title: "Data Refreshed",
+        description: "All data has been refreshed from the database.",
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Real-time listeners
   useEffect(() => {
@@ -189,7 +242,22 @@ export function AdminDashboard() {
 
   // Bulk delete functions for tags and rooms
   const handleBulkDeleteTags = async () => {
-    const availableTags = tags.filter(tag => !tag.isAssigned);
+    // Force refresh tags data before checking
+    const tagsSnapshot = await getDocs(collection(db, "tags"));
+    const currentTags = tagsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as TagType[];
+    
+    const availableTags = currentTags.filter(tag => !tag.isAssigned);
+    console.log("Current tags in database:", currentTags.length);
+    console.log("Available tags:", availableTags.length);
+    console.log("Tags data:", currentTags.map(tag => ({
+      id: tag.id,
+      tagNumber: tag.tagNumber,
+      isAssigned: tag.isAssigned
+    })));
+    
     if (availableTags.length === 0) {
       toast({
         title: "No Available Tags",
@@ -257,7 +325,22 @@ export function AdminDashboard() {
   };
 
   const handleBulkDeleteRooms = async () => {
-    const availableRooms = rooms.filter(room => room.availableBeds > 0);
+    // Force refresh rooms data before checking
+    const roomsSnapshot = await getDocs(collection(db, "rooms"));
+    const currentRooms = roomsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Room[];
+    
+    const availableRooms = currentRooms.filter(room => room.availableBeds > 0);
+    console.log("Current rooms in database:", currentRooms.length);
+    console.log("Available rooms:", availableRooms.length);
+    console.log("Rooms data:", currentRooms.map(room => ({
+      id: room.id,
+      roomNumber: room.roomNumber,
+      availableBeds: room.availableBeds
+    })));
+    
     if (availableRooms.length === 0) {
       toast({
         title: "No Available Rooms",
@@ -470,10 +553,21 @@ export function AdminDashboard() {
       {/* Bulk Delete Controls */}
       <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-3">
-            <Trash className="h-6 w-6" />
-            🗑️ Bulk Delete Operations
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-3">
+              <Trash className="h-6 w-6" />
+              🗑️ Bulk Delete Operations
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshData}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Refresh Data
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -298,15 +298,43 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
           <CardTitle>Users Registration</CardTitle>
           {selectedUsers.size > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
+              <span className={`text-sm font-medium transition-colors duration-300 ${
+                selectedUsers.size === 0 
+                  ? 'text-muted-foreground'
+                  : selectedUsers.size <= 5
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : selectedUsers.size <= 15
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : 'text-red-600 dark:text-red-400'
+              }`}>
                 {selectedUsers.size} selected
+                {selectedUsers.size > 0 && (
+                  <span className={`ml-1 ${
+                    selectedUsers.size <= 5
+                      ? 'text-yellow-500'
+                      : selectedUsers.size <= 15
+                      ? 'text-orange-500'
+                      : 'text-red-500'
+                  }`}>
+                    {selectedUsers.size <= 5 ? '⚠️' : selectedUsers.size <= 15 ? '🚨' : '🔥'}
+                  </span>
+                )}
               </span>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
                     variant="destructive" 
                     size="sm"
-                    disabled={bulkDeleteStatus === 'processing'}
+                    disabled={bulkDeleteStatus === 'processing' || selectedUsers.size === 0}
+                    className={`transition-all duration-300 ${
+                      selectedUsers.size === 0 
+                        ? 'opacity-50 cursor-not-allowed'
+                        : selectedUsers.size <= 5
+                        ? 'bg-yellow-600 hover:bg-yellow-700 border-yellow-600'
+                        : selectedUsers.size <= 15
+                        ? 'bg-orange-600 hover:bg-orange-700 border-orange-600'
+                        : 'bg-red-600 hover:bg-red-700 border-red-600'
+                    }`}
                   >
                     {bulkDeleteStatus === 'processing' ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -314,20 +342,106 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                       <Trash className="h-4 w-4 mr-2" />
                     )}
                     Delete Selected
+                    {selectedUsers.size > 0 && (
+                      <Badge variant="secondary" className={`ml-2 ${
+                        selectedUsers.size <= 5
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                          : selectedUsers.size <= 15
+                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                      }`}>
+                        {selectedUsers.size}
+                      </Badge>
+                    )}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className={`transition-all duration-300 ${
+                  selectedUsers.size === 0 
+                    ? 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'
+                    : selectedUsers.size <= 5
+                    ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800'
+                    : selectedUsers.size <= 15
+                    ? 'border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800'
+                    : 'border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800'
+                }`}>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Selected Users</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {selectedUsers.size} selected users? 
-                      This action will free up their assigned rooms and tags. This action cannot be undone.
+                    <AlertDialogTitle className={`flex items-center gap-2 ${
+                      selectedUsers.size === 0 
+                        ? 'text-gray-800 dark:text-gray-200'
+                        : selectedUsers.size <= 5
+                        ? 'text-yellow-800 dark:text-yellow-200'
+                        : selectedUsers.size <= 15
+                        ? 'text-orange-800 dark:text-orange-200'
+                        : 'text-red-800 dark:text-red-200'
+                    }`}>
+                      <Trash className={`h-5 w-5 ${
+                        selectedUsers.size === 0 
+                          ? 'text-gray-600 dark:text-gray-400'
+                          : selectedUsers.size <= 5
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : selectedUsers.size <= 15
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`} />
+                      Delete Selected Users
+                      {selectedUsers.size > 0 && (
+                        <Badge variant="secondary" className={`ml-2 ${
+                          selectedUsers.size <= 5
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                            : selectedUsers.size <= 15
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                        }`}>
+                          {selectedUsers.size} selected
+                        </Badge>
+                      )}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className={`${
+                      selectedUsers.size === 0 
+                        ? 'text-gray-600 dark:text-gray-400'
+                        : selectedUsers.size <= 5
+                        ? 'text-yellow-700 dark:text-yellow-300'
+                        : selectedUsers.size <= 15
+                        ? 'text-orange-700 dark:text-orange-300'
+                        : 'text-red-700 dark:text-red-300'
+                    }`}>
+                      {selectedUsers.size === 0 ? (
+                        "No users selected for deletion."
+                      ) : selectedUsers.size <= 5 ? (
+                        `⚠️ You are about to delete ${selectedUsers.size} user${selectedUsers.size === 1 ? '' : 's'}. This action will free up their assigned rooms and tags. This action cannot be undone.`
+                      ) : selectedUsers.size <= 15 ? (
+                        `🚨 You are about to delete ${selectedUsers.size} users. This is a significant action that will free up their assigned rooms and tags. This action cannot be undone.`
+                      ) : (
+                        `🔥 DANGER: You are about to delete ${selectedUsers.size} users! This is a massive operation that will free up all their assigned rooms and tags. This action cannot be undone and may impact system performance.`
+                      )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>
-                      Delete {selectedUsers.size} Users
+                    <AlertDialogCancel className={`${
+                      selectedUsers.size === 0 
+                        ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
+                        : selectedUsers.size <= 5
+                        ? 'bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50'
+                        : selectedUsers.size <= 15
+                        ? 'bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/30 dark:hover:bg-orange-900/50'
+                        : 'bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50'
+                    }`}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleBulkDelete}
+                      className={`${
+                        selectedUsers.size === 0 
+                          ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                          : selectedUsers.size <= 5
+                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                          : selectedUsers.size <= 15
+                          ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                    >
+                      <Trash className="h-4 w-4 mr-2" />
+                      Delete {selectedUsers.size} User{selectedUsers.size === 1 ? '' : 's'}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

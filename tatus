@@ -3,3 +3,6 @@
 [33m2b80df6[m fix: resolve delete error and Firebase index issue for tag assignment
 [33mc2fc523[m fix(build): add jspdf-autotable to client dependencies to fix Netlify build
 [33ma58808f[m fix(tags): make tag assignment truly serial by ordering by tagNumber
+[33mca4b2cd[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix bulk delete operations to use fresh data from database instead of stale state
+[33m2c08b1f[m Update project with enhanced room import system and mixed format support
+[33m93dca93[m Add export tabs functionality for Full Details and Summary formats

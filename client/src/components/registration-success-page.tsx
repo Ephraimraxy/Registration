@@ -37,10 +37,10 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
 
   const handleDownload = () => {
     try {
-      generateUserDetailsPDF(user);
+      generateUserDetailsPDF(user, printType);
       toast({
         title: "PDF Downloaded",
-        description: "Your registration details have been downloaded successfully!",
+        description: `Your ${printType === 'full' ? 'full details' : 'summary'} registration details have been downloaded successfully!`,
       });
     } catch (error: any) {
       toast({
@@ -293,9 +293,14 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                   <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
                       <Bed className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Room</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Room & Bed</p>
                       <p className="font-bold text-gray-900 dark:text-gray-100">
                         {user.roomNumber || 'Not assigned'}
+                        {user.bedNumber && (
+                          <span className="text-sm text-blue-600 dark:text-blue-400 ml-1">
+                            (Bed {user.bedNumber})
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="bg-pink-50 dark:bg-pink-950/20 rounded-lg p-4">

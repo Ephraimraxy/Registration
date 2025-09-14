@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle, Download, X, UserPlus, IdCard, Eye } from "lucide-react";
+import { CheckCircle, Download, X, UserPlus, IdCard, Eye, FileText } from "lucide-react";
 import { generateUserDetailsPDF } from "@/lib/pdf-utils";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
@@ -17,13 +17,14 @@ interface SuccessModalProps {
 export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalProps) {
   const { toast } = useToast();
   const [showCardPreview, setShowCardPreview] = useState(false);
+  const [exportType, setExportType] = useState<'full' | 'summary'>('full');
 
   const handleDownload = () => {
     try {
-      generateUserDetailsPDF(user);
+      generateUserDetailsPDF(user, exportType);
       toast({
         title: "PDF Downloaded",
-        description: "Your registration details have been downloaded successfully!",
+        description: `Your ${exportType === 'full' ? 'full details' : 'summary'} registration details have been downloaded successfully!`,
       });
     } catch (error: any) {
       toast({
@@ -92,9 +93,14 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                    <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Room Number</div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Room & Bed</div>
                     <div className="text-2xl font-bold text-blue-700 dark:text-blue-300" data-testid="text-room-number">
                       {user.roomNumber}
+                      {user.bedNumber && (
+                        <span className="text-sm text-blue-500 dark:text-blue-400 ml-2">
+                          (Bed {user.bedNumber})
+                        </span>
+                      )}
                     </div>
                   </div>
                   
@@ -126,6 +132,28 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
               🎓 View Full ID Card Preview
             </Button>
             
+            {/* Export Type Selection */}
+            <div className="flex space-x-2 mb-3">
+              <Button
+                variant={exportType === 'full' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setExportType('full')}
+                className="flex-1"
+              >
+                <FileText className="mr-1 h-3 w-3" />
+                Full Details
+              </Button>
+              <Button
+                variant={exportType === 'summary' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setExportType('summary')}
+                className="flex-1"
+              >
+                <Eye className="mr-1 h-3 w-3" />
+                Summary
+              </Button>
+            </div>
+            
             <div className="flex space-x-3">
               <Button 
                 onClick={handleDownload} 
@@ -133,7 +161,7 @@ export function SuccessModal({ user, onClose, onNewRegistration }: SuccessModalP
                 data-testid="button-download-pdf"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Download PDF
+                Download {exportType === 'full' ? 'Full' : 'Summary'} PDF
               </Button>
               <Button 
                 variant="secondary" 

@@ -9,7 +9,7 @@ declare module 'jspdf' {
   }
 }
 
-export function generateUserDetailsPDF(user: User): void {
+export function generateUserDetailsPDF(user: User, exportType: 'full' | 'summary' = 'full'): void {
   try {
     const doc = new jsPDF();
     
@@ -41,19 +41,28 @@ export function generateUserDetailsPDF(user: User): void {
       }
     };
     
-    const details = [
-      [`Full Name:`, `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided'],
-      [`Date of Birth:`, formatDate(user.dob)],
-      [`Gender:`, user.gender || 'Not provided'],
-      [`Phone Number:`, user.phone || 'Not provided'],
-      [`Email Address:`, user.email || 'Not provided'],
-      [`National ID (NIN):`, user.nin || 'Not provided'],
-      [`State of Origin:`, user.stateOfOrigin || 'Not provided'],
-      [`Local Government Area:`, user.lga || 'Not provided'],
-      [`Room Number:`, user.roomNumber || 'Not assigned'],
-      [`Tag Number:`, user.tagNumber || 'Not assigned'],
-      [`Registration Date:`, formatDate(user.createdAt)],
-    ];
+    // Different details based on export type
+    const details = exportType === 'summary' 
+      ? [
+          [`Full Name:`, `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided'],
+          [`Gender:`, user.gender || 'Not provided'],
+          [`Room & Bed:`, `${user.roomNumber || 'Not assigned'}${user.bedNumber ? ` (Bed ${user.bedNumber})` : ''}`],
+          [`Tag Number:`, user.tagNumber || 'Not assigned'],
+          [`Registration Date:`, formatDate(user.createdAt)],
+        ]
+      : [
+          [`Full Name:`, `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided'],
+          [`Date of Birth:`, formatDate(user.dob)],
+          [`Gender:`, user.gender || 'Not provided'],
+          [`Phone Number:`, user.phone || 'Not provided'],
+          [`Email Address:`, user.email || 'Not provided'],
+          [`National ID (NIN):`, user.nin || 'Not provided'],
+          [`State of Origin:`, user.stateOfOrigin || 'Not provided'],
+          [`Local Government Area:`, user.lga || 'Not provided'],
+          [`Room & Bed:`, `${user.roomNumber || 'Not assigned'}${user.bedNumber ? ` (Bed ${user.bedNumber})` : ''}`],
+          [`Tag Number:`, user.tagNumber || 'Not assigned'],
+          [`Registration Date:`, formatDate(user.createdAt)],
+        ];
     
     let yPosition = 65;
     details.forEach(([label, value]) => {
@@ -71,7 +80,7 @@ export function generateUserDetailsPDF(user: User): void {
     doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, 210);
     
     // Save the PDF
-    const fileName = `${user.firstName}_${user.surname}_registration_details.pdf`.replace(/\s+/g, '_');
+    const fileName = `${user.firstName}_${user.surname}_registration_${exportType}.pdf`.replace(/\s+/g, '_');
     doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);

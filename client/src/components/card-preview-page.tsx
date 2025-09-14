@@ -282,10 +282,15 @@ export function CardPreviewPage({ user, onBack, onPrint }: CardPreviewPageProps)
                       <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
                         <div className="flex items-center gap-2 text-blue-600 mb-2">
                           <Building className="h-5 w-5" />
-                          <span className="font-semibold">Room Number</span>
+                          <span className="font-semibold">Room & Bed</span>
                         </div>
                         <div className="text-2xl font-bold text-gray-800">
                           {user.roomNumber || 'TBD'}
+                          {user.bedNumber && (
+                            <span className="text-sm text-blue-600 ml-2">
+                              (Bed {user.bedNumber})
+                            </span>
+                          )}
                         </div>
                       </div>
 

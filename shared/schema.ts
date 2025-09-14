@@ -14,6 +14,7 @@ export const userSchema = z.object({
   stateOfOrigin: z.string().min(1, "State of origin is required"),
   lga: z.string().min(1, "LGA is required"),
   roomNumber: z.string().optional(),
+  bedNumber: z.string().optional(),
   tagNumber: z.string().optional(),
   createdAt: z.date(),
 });

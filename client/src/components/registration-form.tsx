@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { validateRegistrationData } from "@/lib/firebase";
-import { flexibleAssignRoomAndTag, validateAvailability } from "@/lib/flexible-registration-utils";
+import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
+import { validateAvailability } from "@/lib/availability-utils";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",

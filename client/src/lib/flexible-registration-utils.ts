@@ -348,18 +348,8 @@ async function assignPendingTags(availableTags: any[]) {
   }
 }
 
-/**
- * Validates room and tag availability before starting registration
- * This helps provide better user feedback
- */
-export async function validateAvailability(gender: string): Promise<{
-  hasAvailableRooms: boolean;
-  hasAvailableTags: boolean;
-  availableRoomCount: number;
-  availableTagCount: number;
-}> {
+export async function validateAvailability(gender: string) {
   try {
-    // Check room availability
     const roomsQuery = query(
       collection(db, "rooms"),
       where("gender", "==", gender)
@@ -374,7 +364,6 @@ export async function validateAvailability(gender: string): Promise<{
       }
     }
 
-    // Check tag availability
     const tagsQuery = query(
       collection(db, "tags"),
       where("isAssigned", "==", false)

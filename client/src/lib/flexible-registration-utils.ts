@@ -103,17 +103,17 @@ export async function flexibleAssignRoomAndTag(
         // Step 4: Create user with available assignments
         const userRef = doc(collection(db, "users"));
         
-        // Generate bed number if room is assigned
+        // Generate bed number if room is assigned (READS FIRST)
         let bedNumber = null;
+        let roomRefInTx: any = null;
+        let roomAvailable = false;
         if (roomAssignment) {
-          // Try to get bed numbers from room data, otherwise generate
-          const roomRef = doc(db, "rooms", roomAssignment.roomId);
-          const roomSnap = await transaction.get(roomRef);
+          roomRefInTx = doc(db, "rooms", roomAssignment.roomId);
+          const roomSnap = await transaction.get(roomRefInTx);
           if (roomSnap.exists()) {
-            const roomData = roomSnap.data();
+            const roomData = roomSnap.data() as any;
+            roomAvailable = (roomData.availableBeds ?? 0) > 0;
             if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
-              // Use the first available bed number from the room's bed numbers
-              // Calculate how many beds are already occupied
               const occupiedBeds = roomData.totalBeds - roomData.availableBeds;
               bedNumber = roomData.bedNumbers[occupiedBeds] || generateBedNumber(roomAssignment.roomNumber);
             } else {
@@ -121,6 +121,18 @@ export async function flexibleAssignRoomAndTag(
             }
           } else {
             bedNumber = generateBedNumber(roomAssignment.roomNumber);
+          }
+        }
+
+        // Pre-read tag to satisfy transaction rule (all reads before writes)
+        let tagRefInTx: any = null;
+        let tagAvailable = false;
+        if (tagAssignment) {
+          tagRefInTx = doc(db, "tags", tagAssignment.tagId);
+          const tagSnap = await transaction.get(tagRefInTx);
+          if (tagSnap.exists()) {
+            const tagData = tagSnap.data() as any;
+            tagAvailable = !tagData.isAssigned;
           }
         }
         
@@ -145,38 +157,24 @@ export async function flexibleAssignRoomAndTag(
           updatedAt: serverTimestamp(),
         };
 
-        // Step 5: Execute all operations atomically
+        // Step 5: Execute all operations atomically (NO READS AFTER THIS POINT)
         transaction.set(userRef, finalUserData);
 
-        // Update room if assigned
-        if (roomAssignment) {
-          const roomRef = doc(db, "rooms", roomAssignment.roomId);
-          const latestRoomSnap = await transaction.get(roomRef);
-          if (latestRoomSnap.exists()) {
-            const latestRoom = latestRoomSnap.data() as any;
-            if ((latestRoom.availableBeds ?? 0) > 0) {
-              transaction.update(roomRef, {
-                availableBeds: increment(-1),
-                lastAssigned: serverTimestamp(),
-              });
-            }
-          }
+        // Update room if assigned (using pre-read state)
+        if (roomAssignment && roomRefInTx && roomAvailable) {
+          transaction.update(roomRefInTx, {
+            availableBeds: increment(-1),
+            lastAssigned: serverTimestamp(),
+          });
         }
 
-        // Update tag if assigned
-        if (tagAssignment) {
-          const tagRef = doc(db, "tags", tagAssignment.tagId);
-          const latestTagSnap = await transaction.get(tagRef);
-          if (latestTagSnap.exists()) {
-            const latestTag = latestTagSnap.data() as any;
-            if (!latestTag.isAssigned) {
-              transaction.update(tagRef, {
-                isAssigned: true,
-                assignedUserId: userRef.id,
-                assignedAt: serverTimestamp(),
-              });
-            }
-          }
+        // Update tag if assigned (using pre-read state)
+        if (tagAssignment && tagRefInTx && tagAvailable) {
+          transaction.update(tagRefInTx, {
+            isAssigned: true,
+            assignedUserId: userRef.id,
+            assignedAt: serverTimestamp(),
+          });
         }
 
         return {

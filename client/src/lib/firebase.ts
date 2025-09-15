@@ -56,19 +56,12 @@ export const initializeDatabase = async () => {
 
 const ensureCollectionExists = async (collectionName: string) => {
   try {
+    // Just check if collection exists, don't create placeholder documents
     const collectionRef = collection(db, collectionName);
-    const snapshot = await getDocs(collectionRef);
-    
-    if (snapshot.empty) {
-      console.log(`Creating initial document for collection: ${collectionName}`);
-      const docRef = doc(collectionRef);
-      await setDoc(docRef, {
-        _placeholder: true,
-        createdAt: Timestamp.now(),
-      });
-    }
+    await getDocs(collectionRef);
+    console.log(`Collection ${collectionName} is accessible`);
   } catch (error) {
-    console.error(`Error ensuring collection ${collectionName} exists:`, error);
+    console.error(`Error accessing collection ${collectionName}:`, error);
   }
 };
 

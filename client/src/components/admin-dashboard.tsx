@@ -20,6 +20,7 @@ import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { clearAllData } from "@/lib/db-init";
 import { useToast } from "@/hooks/use-toast";
+import { ClearDataDialog } from "./clear-data-dialog";
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
@@ -40,6 +41,10 @@ export function AdminDashboard() {
   const [bulkDeleteStatus, setBulkDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
   const [bulkDeleteType, setBulkDeleteType] = useState<'tags' | 'rooms' | null>(null);
+  
+  // Clear data dialog state
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  const [isClearingData, setIsClearingData] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -416,10 +421,7 @@ export function AdminDashboard() {
   };
 
   const handleClearAllData = async () => {
-    if (!confirm("⚠️ WARNING: This will permanently delete ALL users, rooms, and tags from the database. This action cannot be undone. Are you sure you want to continue?")) {
-      return;
-    }
-
+    setIsClearingData(true);
     try {
       const success = await clearAllData();
       if (success) {
@@ -428,6 +430,7 @@ export function AdminDashboard() {
           description: "All data has been successfully cleared from the database.",
           className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
         });
+        setShowClearDataDialog(false);
       } else {
         throw new Error("Failed to clear data");
       }
@@ -438,6 +441,8 @@ export function AdminDashboard() {
         description: error.message || "Failed to clear database. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsClearingData(false);
     }
   };
 
@@ -599,7 +604,7 @@ export function AdminDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleClearAllData}
+                onClick={() => setShowClearDataDialog(true)}
                 className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
               >
                 <Trash className="h-4 w-4 mr-2" />
@@ -916,6 +921,14 @@ export function AdminDashboard() {
         />
       )}
 
+
+      {/* Clear Data Dialog */}
+      <ClearDataDialog
+        open={showClearDataDialog}
+        onOpenChange={setShowClearDataDialog}
+        onConfirm={handleClearAllData}
+        isLoading={isClearingData}
+      />
 
       {/* Details view moved to dedicated route */}
         </div>

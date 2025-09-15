@@ -76,6 +76,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
 
     try {
       let items: any[] = [];
+      let existingItemsCount = 0;
       
       // Parse Excel file
       if (type === 'rooms') {
@@ -88,7 +89,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       setUploadProgress(30);
       setUploadStatus('validating');
       
-      // Check for duplicates
+      // Check for duplicates and filter out existing items
       const duplicateChecks = items.map(async (item, index) => {
         const progress = 30 + (index / items.length) * 20;
         setUploadProgress(progress);
@@ -100,23 +101,46 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           );
           const existingRoomSnapshot = await getDocs(existingRoomQuery);
           
-          if (!existingRoomSnapshot.empty) {
-            throw new Error(`Room ${item.roomNumber} already exists`);
-          }
-      } else {
+          return {
+            item,
+            exists: !existingRoomSnapshot.empty,
+            existingData: existingRoomSnapshot.empty ? null : existingRoomSnapshot.docs[0].data()
+          };
+        } else {
           const existingTagQuery = query(
             collection(db, "tags"),
             where("tagNumber", "==", item.tagNumber)
           );
           const existingTagSnapshot = await getDocs(existingTagQuery);
           
-          if (!existingTagSnapshot.empty) {
-            throw new Error(`Tag ${item.tagNumber} already exists`);
-          }
+          return {
+            item,
+            exists: !existingTagSnapshot.empty,
+            existingData: existingTagSnapshot.empty ? null : existingTagSnapshot.docs[0].data()
+          };
         }
       });
       
-      await Promise.all(duplicateChecks);
+      const duplicateResults = await Promise.all(duplicateChecks);
+      
+      // Filter out existing items and show summary
+      const newItems = duplicateResults.filter(result => !result.exists).map(result => result.item);
+      existingItemsCount = duplicateResults.filter(result => result.exists).length;
+      
+      console.log(`Found ${existingItemsCount} existing ${type}, ${newItems.length} new ${type} to upload`);
+      
+      if (newItems.length === 0) {
+        toast({
+          title: "No New Items to Upload",
+          description: `All ${type} in this file already exist in the system.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update items to only include new ones
+      items.length = 0;
+      items.push(...newItems);
       setUploadProgress(50);
       setUploadStatus('uploading');
       
@@ -151,7 +175,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       
       toast({
         title: `${type === 'rooms' ? 'Rooms' : 'Tags'} Uploaded Successfully`,
-        description: `${items.length} ${type} have been added to the system.`,
+        description: `${items.length} new ${type} added to the system. ${existingItemsCount} ${type} were already existing.`,
       });
       
       // Auto close after success

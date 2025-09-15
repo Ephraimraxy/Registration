@@ -16,7 +16,8 @@ interface User {
   email: string;
   stateOfOrigin: string;
   lga: string;
-  roomNumber?: number;
+  roomNumber?: string;
+  bedNumber?: string;
   tagNumber?: string;
   registrationDate?: string;
 }
@@ -191,6 +192,11 @@ export function CardPreviewPage({ user, onBack, onPrint }: CardPreviewPageProps)
                         </div>
                         <div className="text-2xl font-bold text-gray-800">
                           {user.roomNumber || 'TBD'}
+                          {user.bedNumber && (
+                            <span className="text-sm text-blue-600 ml-2">
+                              (Bed {user.bedNumber})
+                            </span>
+                          )}
                         </div>
                       </div>
                       

@@ -43,6 +43,19 @@ export interface TagAssignment {
 }
 
 /**
+ * Generate a bed number for a room
+ * Format: 001, 002, 003, etc.
+ */
+function generateBedNumber(roomNumber: string): string {
+  // For now, generate a simple sequential number
+  // In a real system, you might want to track used bed numbers per room
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000);
+  const bedNum = ((timestamp + random) % 999) + 1;
+  return bedNum.toString().padStart(3, '0');
+}
+
+/**
  * Flexible room and tag assignment that allows partial assignments
  * Users can be registered with just room, just tag, or both
  */
@@ -88,6 +101,13 @@ export async function flexibleAssignRoomAndTag(
 
         // Step 4: Create user with available assignments
         const userRef = doc(collection(db, "users"));
+        
+        // Generate bed number if room is assigned
+        let bedNumber = null;
+        if (roomAssignment) {
+          bedNumber = generateBedNumber(roomAssignment.roomNumber);
+        }
+        
         const finalUserData = {
           firstName: userData.firstName?.trim() || "",
           surname: userData.surname?.trim() || "",
@@ -100,7 +120,7 @@ export async function flexibleAssignRoomAndTag(
           stateOfOrigin: userData.stateOfOrigin?.trim() || "",
           lga: userData.lga?.trim() || "",
           roomNumber: roomAssignment?.roomNumber || null,
-          bedNumber: null, // Will be assigned later if needed
+          bedNumber: bedNumber,
           tagNumber: tagAssignment?.tagNumber || null,
           roomStatus,
           tagStatus,
@@ -292,6 +312,7 @@ async function assignPendingRooms(availableRooms: any[]) {
               // Update user
               transaction.update(userDoc.ref, {
                 roomNumber: roomData.roomNumber,
+                bedNumber: generateBedNumber(roomData.roomNumber),
                 wing: roomData.wing,
                 roomStatus: "assigned",
                 updatedAt: serverTimestamp(),

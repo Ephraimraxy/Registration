@@ -18,6 +18,7 @@ import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
+import { clearAllData } from "@/lib/db-init";
 import { useToast } from "@/hooks/use-toast";
 
 export function AdminDashboard() {
@@ -414,6 +415,33 @@ export function AdminDashboard() {
     setStateFilter("all");
   };
 
+  const handleClearAllData = async () => {
+    if (!confirm("⚠️ WARNING: This will permanently delete ALL users, rooms, and tags from the database. This action cannot be undone. Are you sure you want to continue?")) {
+      return;
+    }
+
+    try {
+      const success = await clearAllData();
+      if (success) {
+        toast({
+          title: "✅ Database Cleared",
+          description: "All data has been successfully cleared from the database.",
+          className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
+        });
+      } else {
+        throw new Error("Failed to clear data");
+      }
+    } catch (error: any) {
+      console.error("Error clearing data:", error);
+      toast({
+        title: "❌ Clear Failed",
+        description: error.message || "Failed to clear database. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const uniqueStates = Array.from(new Set(users?.map(user => user.stateOfOrigin).filter(Boolean) ?? [])).sort();
   const uniqueWings = Array.from(new Set(rooms?.map(room => room.wing).filter(Boolean) ?? [])).sort();
 
@@ -558,15 +586,26 @@ export function AdminDashboard() {
               <Trash className="h-6 w-6" />
               🗑️ Bulk Delete Operations
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshData}
-              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Refresh Data
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAllData}
+                className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Clear All Data
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

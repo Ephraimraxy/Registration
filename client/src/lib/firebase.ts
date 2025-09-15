@@ -43,8 +43,8 @@ export const initializeDatabase = async () => {
     // Create initial admin document
     await createInitialAdminDocument();
     
-    // Initialize sample data
-    await initializeSampleData();
+    // Note: Sample data is not created by default
+    // Use initializeSampleData(true) to create sample data if needed
     
     console.log("Database initialization completed successfully!");
     return true;

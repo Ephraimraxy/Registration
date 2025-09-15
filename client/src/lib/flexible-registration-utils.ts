@@ -112,8 +112,9 @@ export async function flexibleAssignRoomAndTag(
             const roomData = roomSnap.data();
             if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
               // Use the first available bed number from the room's bed numbers
-              const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
-              bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomAssignment.roomNumber);
+              // Calculate how many beds are already occupied
+              const occupiedBeds = roomData.totalBeds - roomData.availableBeds;
+              bedNumber = roomData.bedNumbers[occupiedBeds] || generateBedNumber(roomAssignment.roomNumber);
             } else {
               bedNumber = generateBedNumber(roomAssignment.roomNumber);
             }
@@ -380,8 +381,9 @@ async function assignPendingRooms(availableRooms: any[]) {
                 // Generate bed number using room's bed numbers if available
                 let bedNumber = generateBedNumber(roomData.roomNumber);
                 if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
-                  const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
-                  bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomData.roomNumber);
+                  // Calculate how many beds are already occupied
+                  const occupiedBeds = roomData.totalBeds - roomData.availableBeds;
+                  bedNumber = roomData.bedNumbers[occupiedBeds] || generateBedNumber(roomData.roomNumber);
                 }
                 
                 // Update user

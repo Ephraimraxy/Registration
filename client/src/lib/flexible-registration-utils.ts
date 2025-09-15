@@ -105,7 +105,21 @@ export async function flexibleAssignRoomAndTag(
         // Generate bed number if room is assigned
         let bedNumber = null;
         if (roomAssignment) {
-          bedNumber = generateBedNumber(roomAssignment.roomNumber);
+          // Try to get bed numbers from room data, otherwise generate
+          const roomRef = doc(db, "rooms", roomAssignment.roomId);
+          const roomSnap = await transaction.get(roomRef);
+          if (roomSnap.exists()) {
+            const roomData = roomSnap.data();
+            if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
+              // Use the first available bed number from the room's bed numbers
+              const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
+              bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomAssignment.roomNumber);
+            } else {
+              bedNumber = generateBedNumber(roomAssignment.roomNumber);
+            }
+          } else {
+            bedNumber = generateBedNumber(roomAssignment.roomNumber);
+          }
         }
         
         const finalUserData = {
@@ -309,10 +323,17 @@ async function assignPendingRooms(availableRooms: any[]) {
                 lastAssigned: serverTimestamp(),
               });
               
+              // Generate bed number using room's bed numbers if available
+              let bedNumber = generateBedNumber(roomData.roomNumber);
+              if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
+                const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
+                bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomData.roomNumber);
+              }
+              
               // Update user
               transaction.update(userDoc.ref, {
                 roomNumber: roomData.roomNumber,
-                bedNumber: generateBedNumber(roomData.roomNumber),
+                bedNumber: bedNumber,
                 wing: roomData.wing,
                 roomStatus: "assigned",
                 updatedAt: serverTimestamp(),

@@ -6,10 +6,89 @@ export interface ExcelRoom {
   'Room Number': string | number;
   Gender: string;
   'Total Beds': number;
+  'Bed Numbers'?: string; // Optional column for individual bed numbers
 }
 
 export interface ExcelTag {
   'Tag Number': string;
+}
+
+/**
+ * Parse bed numbers from various formats
+ */
+function parseBedNumbers(bedNumbersStr: string, totalBeds: number): string[] {
+  if (!bedNumbersStr || bedNumbersStr.trim() === '') {
+    return generateDefaultBedNumbers(totalBeds);
+  }
+  
+  const bedNumbers: string[] = [];
+  const cleaned = bedNumbersStr.toString().trim();
+  
+  // Handle different separators
+  const separators = [',', ';', '\n', '\t'];
+  let parts: string[] = [cleaned];
+  
+  for (const sep of separators) {
+    if (cleaned.includes(sep)) {
+      parts = cleaned.split(sep).map(p => p.trim()).filter(p => p);
+      break;
+    }
+  }
+  
+  // Handle range format (e.g., "001-004")
+  if (parts.length === 1 && parts[0].includes('-')) {
+    const rangeParts = parts[0].split('-');
+    if (rangeParts.length === 2) {
+      const start = parseInt(rangeParts[0].trim());
+      const end = parseInt(rangeParts[1].trim());
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) {
+          bedNumbers.push(i.toString().padStart(3, '0'));
+        }
+        return bedNumbers;
+      }
+    }
+  }
+  
+  // Process individual bed numbers
+  for (const part of parts) {
+    if (part) {
+      // Extract number and pad with zeros
+      const num = parseInt(part.replace(/\D/g, ''));
+      if (!isNaN(num)) {
+        bedNumbers.push(num.toString().padStart(3, '0'));
+      }
+    }
+  }
+  
+  // If we have the right number of beds, return them
+  if (bedNumbers.length === totalBeds) {
+    return bedNumbers;
+  }
+  
+  // If we have some but not all, fill the rest
+  if (bedNumbers.length > 0 && bedNumbers.length < totalBeds) {
+    const missing = totalBeds - bedNumbers.length;
+    for (let i = 1; i <= missing; i++) {
+      const nextNum = Math.max(...bedNumbers.map(b => parseInt(b))) + i;
+      bedNumbers.push(nextNum.toString().padStart(3, '0'));
+    }
+    return bedNumbers;
+  }
+  
+  // If parsing failed, generate default numbers
+  return generateDefaultBedNumbers(totalBeds);
+}
+
+/**
+ * Generate default bed numbers (001, 002, 003, etc.)
+ */
+function generateDefaultBedNumbers(totalBeds: number): string[] {
+  const bedNumbers: string[] = [];
+  for (let i = 1; i <= totalBeds; i++) {
+    bedNumbers.push(i.toString().padStart(3, '0'));
+  }
+  return bedNumbers;
 }
 
 export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
@@ -48,12 +127,18 @@ export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
           // Normalize gender to proper case
           const gender = normalizedGender === 'male' ? 'Male' : 'Female';
           
+          // Parse bed numbers if provided, otherwise auto-generate
+          const bedNumbers = row['Bed Numbers'] 
+            ? parseBedNumbers(row['Bed Numbers'], row['Total Beds'])
+            : generateDefaultBedNumbers(row['Total Beds']);
+          
           return {
             wing: wing,
             roomNumber: roomNumber,
             gender: gender as 'Male' | 'Female',
             totalBeds: row['Total Beds'],
             availableBeds: row['Total Beds'], // Initially all beds are available
+            bedNumbers: bedNumbers, // Store the parsed bed numbers
           };
         });
         

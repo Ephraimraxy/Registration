@@ -36,6 +36,7 @@ export const roomSchema = z.object({
   gender: z.enum(["Male", "Female"]),
   totalBeds: z.number().positive(),
   availableBeds: z.number().min(0),
+  bedNumbers: z.array(z.string()).optional(), // Individual bed numbers (001, 002, 003, etc.)
 });
 
 export const insertRoomSchema = roomSchema.omit({

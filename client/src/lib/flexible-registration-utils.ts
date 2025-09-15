@@ -267,8 +267,18 @@ async function findAndReserveTag(transaction: any): Promise<TagAssignment | null
     return null;
   }
   
-  const tagDoc = tagsSnapshot.docs[0];
-  const tag = tagDoc.data();
+  // Sort tags by tag number to ensure sequential assignment (001, 002, 003, etc.)
+  const sortedTags = tagsSnapshot.docs
+    .map(doc => ({ doc, data: doc.data() }))
+    .sort((a, b) => {
+      // Extract numeric part from tag number for proper sorting
+      const aNum = parseInt(a.data.tagNumber.replace(/\D/g, '')) || 0;
+      const bNum = parseInt(b.data.tagNumber.replace(/\D/g, '')) || 0;
+      return aNum - bNum; // Ascending order (001, 002, 003...)
+    });
+  
+  const tagDoc = sortedTags[0].doc;
+  const tag = sortedTags[0].data;
   
   return {
     tagId: tagDoc.id,
@@ -402,9 +412,19 @@ async function assignPendingTags(availableTags: any[]) {
     );
     const pendingUsersSnapshot = await getDocs(pendingUsersQuery);
     
-    for (let i = 0; i < Math.min(pendingUsersSnapshot.size, availableTags.length); i++) {
+    // Sort available tags by tag number to ensure sequential assignment
+    const sortedTags = availableTags
+      .map(tag => ({ tag, data: tag.data() }))
+      .sort((a, b) => {
+        // Extract numeric part from tag number for proper sorting
+        const aNum = parseInt(a.data.tagNumber.replace(/\D/g, '')) || 0;
+        const bNum = parseInt(b.data.tagNumber.replace(/\D/g, '')) || 0;
+        return aNum - bNum; // Ascending order (001, 002, 003...)
+      });
+    
+    for (let i = 0; i < Math.min(pendingUsersSnapshot.size, sortedTags.length); i++) {
       const userDoc = pendingUsersSnapshot.docs[i];
-      const tagDoc = availableTags[i];
+      const tagDoc = sortedTags[i].tag;
       
       await runTransaction(db, async (transaction) => {
         const tagRef = doc(db, "tags", tagDoc.id);

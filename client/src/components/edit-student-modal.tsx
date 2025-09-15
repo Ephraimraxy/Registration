@@ -181,28 +181,33 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-description">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-950 border-2 border-blue-200 dark:border-blue-700 shadow-2xl" aria-describedby="edit-description">
+        <DialogHeader className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 -m-6 mb-4 p-6 rounded-t-lg border-b border-blue-200 dark:border-blue-700">
           <div className="flex items-center justify-between">
-            <DialogTitle>Edit User Information</DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-edit">
+            <DialogTitle className="text-xl font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <Save className="h-5 w-5 text-white" />
+              </div>
+              Edit User Information
+            </DialogTitle>
+            <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-edit" className="hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400">
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p id="edit-description" className="text-sm text-muted-foreground">
+          <p id="edit-description" className="text-sm text-blue-700 dark:text-blue-300 mt-2">
             Update user information and room assignments. Changes will be saved immediately.
           </p>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" data-testid="form-edit-user">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 bg-white/50 dark:bg-gray-800/50 rounded-lg p-6 border border-blue-100 dark:border-blue-800" data-testid="form-edit-user">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">First Name</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-edit-first-name" />
                     </FormControl>
@@ -216,7 +221,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 name="surname"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Surname</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Surname</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-edit-surname" />
                     </FormControl>
@@ -230,7 +235,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 name="middleName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Middle Name</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Middle Name</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-edit-middle-name" />
                     </FormControl>
@@ -244,7 +249,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Gender</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-edit-gender">
@@ -266,7 +271,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Phone Number</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-edit-phone" />
                     </FormControl>
@@ -280,7 +285,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel className="text-blue-700 dark:text-blue-300 font-semibold">Email Address</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} data-testid="input-edit-email" />
                     </FormControl>
@@ -344,11 +349,11 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
               </div>
             )}
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex space-x-3 pt-6 border-t border-blue-200 dark:border-blue-700">
               <Button 
                 type="submit" 
                 disabled={isUpdating}
-                className="flex-1"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 data-testid="button-save-changes"
               >
                 {isUpdating ? (
@@ -365,10 +370,10 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
               </Button>
               <Button 
                 type="button" 
-                variant="secondary" 
+                variant="outline" 
                 onClick={onClose}
                 disabled={isUpdating}
-                className="flex-1"
+                className="flex-1 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 transition-all duration-300"
                 data-testid="button-cancel-edit"
               >
                 Cancel

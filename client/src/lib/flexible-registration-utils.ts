@@ -6,6 +6,7 @@ import {
   increment, 
   query, 
   where, 
+  orderBy,
   getDocs,
   onSnapshot,
   updateDoc
@@ -324,10 +325,11 @@ export function startPendingAssignmentMonitor() {
 
 async function assignPendingRooms(availableRooms: any[]) {
   try {
-    // Get users with pending room assignments
+    // Get users with pending room assignments, ordered by registration time (first-come-first-served)
     const pendingUsersQuery = query(
       collection(db, "users"),
-      where("roomStatus", "==", "pending")
+      where("roomStatus", "==", "pending"),
+      orderBy("createdAt", "asc") // First registered users get priority
     );
     const pendingUsersSnapshot = await getDocs(pendingUsersQuery);
     
@@ -407,10 +409,11 @@ async function assignPendingRooms(availableRooms: any[]) {
 
 async function assignPendingTags(availableTags: any[]) {
   try {
-    // Get users with pending tag assignments
+    // Get users with pending tag assignments, ordered by registration time (first-come-first-served)
     const pendingUsersQuery = query(
       collection(db, "users"),
-      where("tagStatus", "==", "pending")
+      where("tagStatus", "==", "pending"),
+      orderBy("createdAt", "asc") // First registered users get priority
     );
     const pendingUsersSnapshot = await getDocs(pendingUsersQuery);
     

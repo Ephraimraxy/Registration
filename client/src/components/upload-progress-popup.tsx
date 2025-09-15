@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,18 +94,19 @@ export function UploadProgressPopup({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-blue-950 border-2 border-blue-200 dark:border-blue-700 shadow-2xl">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${getStatusColor()} mb-4 shadow-lg`}>
-            {getStatusIcon()}
+        <DialogHeader>
+          <div className="text-center mb-6">
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${getStatusColor()} mb-4 shadow-lg`}>
+              {getStatusIcon()}
+            </div>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              {type === 'rooms' ? '🏠 Room Data Upload' : '🏷️ Tag Data Upload'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400 mt-2">
+              Processing your Excel file with real-time progress tracking
+            </DialogDescription>
           </div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            {type === 'rooms' ? '🏠 Room Data Upload' : '🏷️ Tag Data Upload'}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Processing your Excel file with real-time progress tracking
-          </p>
-        </div>
+        </DialogHeader>
 
         {/* File Information */}
         {currentFile && (

@@ -137,13 +137,6 @@ export function AdminDashboard() {
         })) as Room[];
         setRooms(roomData);
         console.log("Rooms updated:", roomData.length, "rooms");
-        console.log("Room data:", roomData.map(room => ({
-          id: room.id,
-          roomNumber: room.roomNumber,
-          availableBeds: room.availableBeds,
-          gender: room.gender,
-          wing: room.wing
-        })));
       }
     );
 
@@ -156,12 +149,6 @@ export function AdminDashboard() {
         })) as TagType[];
         setTags(tagData);
         console.log("Tags updated:", tagData.length, "tags");
-        console.log("Tag data:", tagData.map(tag => ({
-          id: tag.id,
-          tagNumber: tag.tagNumber,
-          isAssigned: tag.isAssigned,
-          assignedUserId: tag.assignedUserId
-        })));
       }
     );
 
@@ -258,11 +245,6 @@ export function AdminDashboard() {
     const availableTags = currentTags.filter(tag => !tag.isAssigned);
     console.log("Current tags in database:", currentTags.length);
     console.log("Available tags:", availableTags.length);
-    console.log("Tags data:", currentTags.map(tag => ({
-      id: tag.id,
-      tagNumber: tag.tagNumber,
-      isAssigned: tag.isAssigned
-    })));
     
     if (availableTags.length === 0) {
       toast({
@@ -341,11 +323,6 @@ export function AdminDashboard() {
     const availableRooms = currentRooms.filter(room => room.availableBeds > 0);
     console.log("Current rooms in database:", currentRooms.length);
     console.log("Available rooms:", availableRooms.length);
-    console.log("Rooms data:", currentRooms.map(room => ({
-      id: room.id,
-      roomNumber: room.roomNumber,
-      availableBeds: room.availableBeds
-    })));
     
     if (availableRooms.length === 0) {
       toast({

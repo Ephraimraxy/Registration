@@ -223,15 +223,34 @@ async function findAndReserveRoom(transaction: any, gender: string): Promise<Roo
   );
   const roomsSnapshot = await getDocs(roomsQuery);
   
-  for (const roomDoc of roomsSnapshot.docs) {
-    const roomData = roomDoc.data();
-    if (roomData.availableBeds > 0) {
-      return {
-        roomId: roomDoc.id,
-        roomNumber: roomData.roomNumber,
-        wing: roomData.wing,
-      };
-    }
+  // Sort rooms by occupancy priority:
+  // 1. Rooms that are partially filled (not empty, not full) - highest priority
+  // 2. Empty rooms - medium priority  
+  // 3. Full rooms - lowest priority (shouldn't be selected anyway)
+  const sortedRooms = roomsSnapshot.docs
+    .map(doc => ({ doc, data: doc.data() }))
+    .filter(({ data }) => data.availableBeds > 0) // Only rooms with available beds
+    .sort((a, b) => {
+      const aOccupancy = a.data.totalBeds - a.data.availableBeds; // Occupied beds
+      const bOccupancy = b.data.totalBeds - b.data.availableBeds; // Occupied beds
+      
+      // Prioritize rooms with more occupants (room completion strategy)
+      if (aOccupancy !== bOccupancy) {
+        return bOccupancy - aOccupancy; // Higher occupancy first
+      }
+      
+      // If same occupancy, prioritize by room number for consistency
+      return a.data.roomNumber.localeCompare(b.data.roomNumber);
+    });
+  
+  // Return the first available room (highest priority)
+  if (sortedRooms.length > 0) {
+    const { doc: roomDoc, data: roomData } = sortedRooms[0];
+    return {
+      roomId: roomDoc.id,
+      roomNumber: roomData.roomNumber,
+      wing: roomData.wing,
+    };
   }
   
   return null;
@@ -301,46 +320,72 @@ async function assignPendingRooms(availableRooms: any[]) {
     );
     const pendingUsersSnapshot = await getDocs(pendingUsersQuery);
     
-    for (const userDoc of pendingUsersSnapshot.docs) {
-      const userData = userDoc.data();
-      
-      // Find a room for this user's gender
-      const suitableRoom = availableRooms.find(room => 
-        room.data().gender === userData.gender && room.data().availableBeds > 0
-      );
-      
-      if (suitableRoom) {
-        await runTransaction(db, async (transaction) => {
-          const roomRef = doc(db, "rooms", suitableRoom.id);
-          const roomSnap = await transaction.get(roomRef);
+    // Group pending users by gender
+    const pendingUsersByGender = pendingUsersSnapshot.docs.reduce((acc, doc) => {
+      const userData = doc.data();
+      const gender = userData.gender;
+      if (!acc[gender]) {
+        acc[gender] = [];
+      }
+      acc[gender].push(doc);
+      return acc;
+    }, {} as Record<string, any[]>);
+    
+    // Process each gender group separately
+    for (const [gender, userDocs] of Object.entries(pendingUsersByGender)) {
+      // Filter and sort rooms for this gender using room-completion strategy
+      const suitableRooms = availableRooms
+        .filter(room => room.data().gender === gender && room.data().availableBeds > 0)
+        .sort((a, b) => {
+          const aOccupancy = a.data().totalBeds - a.data().availableBeds; // Occupied beds
+          const bOccupancy = b.data().totalBeds - b.data().availableBeds; // Occupied beds
           
-          if (roomSnap.exists()) {
-            const roomData = roomSnap.data();
-            if (roomData.availableBeds > 0) {
-              // Update room
-              transaction.update(roomRef, {
-                availableBeds: increment(-1),
-                lastAssigned: serverTimestamp(),
-              });
-              
-              // Generate bed number using room's bed numbers if available
-              let bedNumber = generateBedNumber(roomData.roomNumber);
-              if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
-                const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
-                bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomData.roomNumber);
-              }
-              
-              // Update user
-              transaction.update(userDoc.ref, {
-                roomNumber: roomData.roomNumber,
-                bedNumber: bedNumber,
-                wing: roomData.wing,
-                roomStatus: "assigned",
-                updatedAt: serverTimestamp(),
-              });
-            }
+          // Prioritize rooms with more occupants (room completion strategy)
+          if (aOccupancy !== bOccupancy) {
+            return bOccupancy - aOccupancy; // Higher occupancy first
           }
+          
+          // If same occupancy, prioritize by room number for consistency
+          return a.data().roomNumber.localeCompare(b.data().roomNumber);
         });
+      
+      // Assign users to rooms using room-completion strategy
+      for (const userDoc of userDocs) {
+        const suitableRoom = suitableRooms.find(room => room.data().availableBeds > 0);
+        
+        if (suitableRoom) {
+          await runTransaction(db, async (transaction) => {
+            const roomRef = doc(db, "rooms", suitableRoom.id);
+            const roomSnap = await transaction.get(roomRef);
+            
+            if (roomSnap.exists()) {
+              const roomData = roomSnap.data();
+              if (roomData.availableBeds > 0) {
+                // Update room
+                transaction.update(roomRef, {
+                  availableBeds: increment(-1),
+                  lastAssigned: serverTimestamp(),
+                });
+                
+                // Generate bed number using room's bed numbers if available
+                let bedNumber = generateBedNumber(roomData.roomNumber);
+                if (roomData.bedNumbers && roomData.bedNumbers.length > 0) {
+                  const availableBedIndex = roomData.totalBeds - roomData.availableBeds;
+                  bedNumber = roomData.bedNumbers[availableBedIndex] || generateBedNumber(roomData.roomNumber);
+                }
+                
+                // Update user
+                transaction.update(userDoc.ref, {
+                  roomNumber: roomData.roomNumber,
+                  bedNumber: bedNumber,
+                  wing: roomData.wing,
+                  roomStatus: "assigned",
+                  updatedAt: serverTimestamp(),
+                });
+              }
+            }
+          });
+        }
       }
     }
   } catch (error) {

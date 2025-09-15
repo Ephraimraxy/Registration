@@ -265,7 +265,7 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
                                   Room {room.roomNumber}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {room.availableBeds || 0} / {room.totalBeds || 0} beds
+                                  {usersInRoom.length} / {room.totalBeds || 0} beds
                                 </div>
                               </div>
                             </div>

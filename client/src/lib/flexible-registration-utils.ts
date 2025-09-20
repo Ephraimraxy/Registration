@@ -74,7 +74,7 @@ export async function flexibleAssignRoomAndTag(
         let roomStatus = "pending" as const;
         
         try {
-          roomAssignment = await findAndReserveRoom(transaction, userData.gender);
+          roomAssignment = await findAndReserveRoom(transaction, userData.gender, userData.isVip || false);
           if (roomAssignment) {
             roomStatus = "assigned";
           }
@@ -216,11 +216,25 @@ export async function flexibleAssignRoomAndTag(
   };
 }
 
-async function findAndReserveRoom(transaction: any, gender: string): Promise<RoomAssignment | null> {
-  const roomsQuery = query(
-    collection(db, "rooms"),
-    where("gender", "==", gender)
-  );
+async function findAndReserveRoom(transaction: any, gender: string, isVip: boolean = false): Promise<RoomAssignment | null> {
+  // Build query based on VIP status
+  let roomsQuery;
+  if (isVip) {
+    // VIP users can only get VIP rooms
+    roomsQuery = query(
+      collection(db, "rooms"),
+      where("gender", "==", gender),
+      where("isVipRoom", "==", true)
+    );
+  } else {
+    // Regular users can only get regular rooms
+    roomsQuery = query(
+      collection(db, "rooms"),
+      where("gender", "==", gender),
+      where("isVipRoom", "!=", true)
+    );
+  }
+  
   const roomsSnapshot = await getDocs(roomsQuery);
   
   // Sort rooms by occupancy priority:
@@ -331,22 +345,33 @@ async function assignPendingRooms(availableRooms: any[]) {
     );
     const pendingUsersSnapshot = await getDocs(pendingUsersQuery);
     
-    // Group pending users by gender
-    const pendingUsersByGender = pendingUsersSnapshot.docs.reduce((acc, doc) => {
+    // Group pending users by gender and VIP status
+    const pendingUsersByGroup = pendingUsersSnapshot.docs.reduce((acc, doc) => {
       const userData = doc.data();
       const gender = userData.gender;
-      if (!acc[gender]) {
-        acc[gender] = [];
+      const isVip = userData.isVip || false;
+      const groupKey = `${gender}-${isVip ? 'vip' : 'regular'}`;
+      
+      if (!acc[groupKey]) {
+        acc[groupKey] = [];
       }
-      acc[gender].push(doc);
+      acc[groupKey].push(doc);
       return acc;
     }, {} as Record<string, any[]>);
     
-    // Process each gender group separately
-    for (const [gender, userDocs] of Object.entries(pendingUsersByGender)) {
-      // Filter and sort rooms for this gender using room-completion strategy
+    // Process each group separately (gender + VIP status)
+    for (const [groupKey, userDocs] of Object.entries(pendingUsersByGroup)) {
+      const [gender, vipStatus] = groupKey.split('-');
+      const isVip = vipStatus === 'vip';
+      
+      // Filter and sort rooms for this gender and VIP status using room-completion strategy
       const suitableRooms = availableRooms
-        .filter(room => room.data().gender === gender && room.data().availableBeds > 0)
+        .filter(room => {
+          const roomData = room.data();
+          return roomData.gender === gender && 
+                 roomData.availableBeds > 0 &&
+                 (isVip ? roomData.isVipRoom === true : roomData.isVipRoom !== true);
+        })
         .sort((a, b) => {
           const aOccupancy = a.data().totalBeds - a.data().availableBeds; // Occupied beds
           const bOccupancy = b.data().totalBeds - b.data().availableBeds; // Occupied beds

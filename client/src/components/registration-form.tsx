@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
@@ -486,6 +487,35 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* VIP Status Checkbox */}
+                    <FormField
+                      control={form.control}
+                      name="isVip"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-vip"
+                                className="w-5 h-5 border-2 border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                              />
+                            </FormControl>
+                            <div className="space-y-1">
+                              <FormLabel className="text-purple-800 dark:text-purple-200 font-bold text-lg cursor-pointer">
+                                👑 VIP Status
+                              </FormLabel>
+                              <p className="text-sm text-purple-600 dark:text-purple-300">
+                                Check this if the person is a VIP and should be assigned to reserved rooms
+                              </p>
+                            </div>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

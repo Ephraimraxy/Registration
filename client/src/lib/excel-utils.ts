@@ -6,7 +6,7 @@ export interface ExcelRoom {
   'Room Number': string | number;
   Gender: string;
   'Total Beds': number;
-  'Bed Numbers'?: string; // Optional column for individual bed numbers
+  'Bed Numbers'?: string; // Optional column for individual bed numbers (can be "RESERVED" for VIP rooms)
 }
 
 export interface ExcelTag {
@@ -22,7 +22,16 @@ function parseBedNumbers(bedNumbersStr: string, totalBeds: number): string[] {
   }
   
   const bedNumbers: string[] = [];
-  const cleaned = bedNumbersStr.toString().trim();
+  const cleaned = bedNumbersStr.toString().trim().toUpperCase();
+  
+  // Handle RESERVED/VIP rooms
+  if (cleaned === 'RESERVED') {
+    // For VIP rooms, generate special bed numbers
+    for (let i = 1; i <= totalBeds; i++) {
+      bedNumbers.push(`VIP${i.toString().padStart(3, '0')}`);
+    }
+    return bedNumbers;
+  }
   
   // Handle different separators
   const separators = [',', ';', '\n', '\t'];
@@ -132,6 +141,9 @@ export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
             ? parseBedNumbers(row['Bed Numbers'], row['Total Beds'])
             : generateDefaultBedNumbers(row['Total Beds']);
           
+          // Check if this is a VIP/reserved room
+          const isVipRoom = row['Bed Numbers'] && row['Bed Numbers'].toString().trim().toUpperCase() === 'RESERVED';
+          
           return {
             wing: wing,
             roomNumber: roomNumber,
@@ -139,6 +151,7 @@ export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
             totalBeds: row['Total Beds'],
             availableBeds: row['Total Beds'], // Initially all beds are available
             bedNumbers: bedNumbers, // Store the parsed bed numbers
+            isVipRoom: isVipRoom, // Mark as VIP room
           };
         });
         

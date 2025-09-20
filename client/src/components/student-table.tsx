@@ -540,8 +540,13 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                           </AvatarFallback>
                         </Avatar>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-foreground" data-testid={`text-name-${user.id}`}>
+                          <div className="text-sm font-medium text-foreground flex items-center gap-2" data-testid={`text-name-${user.id}`}>
                             {fullName}
+                            {user.isVip && (
+                              <span className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg">
+                                👑 VIP
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground" data-testid={`text-email-${user.id}`}>
                             {user.email}

@@ -261,8 +261,13 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
                                 <Hash className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                   Room {room.roomNumber}
+                                  {room.isVipRoom && (
+                                    <span className="px-2 py-1 text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-lg">
+                                      👑 VIP
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
                                   {usersInRoom.length} / {room.totalBeds || 0} beds

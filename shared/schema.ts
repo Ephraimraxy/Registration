@@ -18,6 +18,7 @@ export const userSchema = z.object({
   tagNumber: z.string().optional(),
   roomStatus: z.enum(["assigned", "pending"]).optional(),
   tagStatus: z.enum(["assigned", "pending"]).optional(),
+  isVip: z.boolean().optional(), // VIP status for special room assignment
   createdAt: z.date(),
 });
 
@@ -37,6 +38,7 @@ export const roomSchema = z.object({
   totalBeds: z.number().positive(),
   availableBeds: z.number().min(0),
   bedNumbers: z.array(z.string()).optional(), // Individual bed numbers (001, 002, 003, etc.)
+  isVipRoom: z.boolean().optional(), // VIP/Reserved room for special persons
 });
 
 export const insertRoomSchema = roomSchema.omit({

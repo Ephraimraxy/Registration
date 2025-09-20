@@ -412,14 +412,18 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
                       <p className="text-gray-700 dark:text-gray-300 font-mono">Wing, Room Number, Gender, Total Beds</p>
                     </div>
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">
-                      <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">💡 Example:</p>
-                      <p className="text-gray-700 dark:text-gray-300 font-mono">A, 254, female, 4</p>
+                      <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">💡 Examples:</p>
+                      <p className="text-gray-700 dark:text-gray-300 font-mono mb-1">Regular: A, 254, female, 4</p>
+                      <p className="text-purple-700 dark:text-purple-300 font-mono">VIP: B, 101, male, 2, RESERVED</p>
                     </div>
                   </div>
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
                       <strong>💡 Note:</strong> Wing can be any string (A, EVE, etc.), 
                       Room Number is just a number, Gender accepts male/female or Male/Female
+                    </p>
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      <strong>👑 VIP Rooms:</strong> Use "RESERVED" in Bed Numbers column for VIP rooms (1-2 beds only)
                     </p>
                   </div>
                 </div>

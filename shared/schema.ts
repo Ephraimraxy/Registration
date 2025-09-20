@@ -57,6 +57,26 @@ export const insertTagSchema = tagSchema.omit({
   id: true,
 });
 
+// Course schema for attendance management
+export const courseSchema = z.object({
+  id: z.string(),
+  courseCode: z.string().min(1, "Course code is required"),
+  courseName: z.string().min(1, "Course name is required"),
+  description: z.string().optional(),
+  instructor: z.string().min(1, "Instructor name is required"),
+  duration: z.number().positive("Duration must be positive"),
+  maxStudents: z.number().positive("Max students must be positive").optional(),
+  isActive: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const insertCourseSchema = courseSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Statistics schema for admin dashboard
 export const statsSchema = z.object({
   totalStudents: z.number(),
@@ -71,4 +91,6 @@ export type Room = z.infer<typeof roomSchema>;
 export type InsertRoom = z.infer<typeof insertRoomSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type InsertTag = z.infer<typeof insertTagSchema>;
+export type Course = z.infer<typeof courseSchema>;
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
 export type Stats = z.infer<typeof statsSchema>;

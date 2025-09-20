@@ -386,8 +386,26 @@ async function assignPendingRooms(availableRooms: any[]) {
         });
       
       // Assign users to rooms using room-completion strategy
+      // Process users one by one, always selecting the most occupied room with available beds
       for (const userDoc of userDocs) {
-        const suitableRoom = suitableRooms.find(room => room.data().availableBeds > 0);
+        // Re-sort rooms by current occupancy to ensure room-completion
+        const currentSuitableRooms = suitableRooms
+          .filter(room => room.data().availableBeds > 0)
+          .sort((a, b) => {
+            const aOccupancy = a.data().totalBeds - a.data().availableBeds;
+            const bOccupancy = b.data().totalBeds - b.data().availableBeds;
+            
+            // Prioritize rooms with more occupants (room completion strategy)
+            if (aOccupancy !== bOccupancy) {
+              return bOccupancy - aOccupancy; // Higher occupancy first
+            }
+            
+            // If same occupancy, prioritize by room number for consistency
+            return a.data().roomNumber.localeCompare(b.data().roomNumber);
+          });
+        
+        // Take the most occupied room with available beds
+        const suitableRoom = currentSuitableRooms[0];
         
         if (suitableRoom) {
           await runTransaction(db, async (transaction) => {

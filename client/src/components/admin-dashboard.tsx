@@ -193,6 +193,7 @@ export function AdminDashboard() {
   }, [users, searchQuery, genderFilter, wingFilter, stateFilter]);
 
   const handleUpload = (type: 'rooms' | 'tags') => {
+    console.log(`Navigating to ${type} import page...`);
     if (type === 'rooms') {
       setLocation('/room-import');
     } else {

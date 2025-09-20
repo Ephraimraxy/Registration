@@ -9,6 +9,8 @@ import { usePendingAssignments } from "@/hooks/use-pending-assignments";
 import Home from "@/pages/home";
 import { RoomsTagsDetailPage } from "@/components/rooms-tags-detail-page";
 import { UserDetailsPage } from "@/components/user-details-page";
+import { RoomImportPage } from "@/components/room-import-page";
+import { TagImportPage } from "@/components/tag-import-page";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/rooms-tags" component={() => <RoomsTagsDetailPage onBack={() => window.history.back()} />} />
       <Route path="/user-details" component={() => <UserDetailsPage user={JSON.parse(localStorage.getItem('viewingUser') || '{}')} onBack={() => window.history.back()} />} />
+      <Route path="/room-import" component={RoomImportPage} />
+      <Route path="/tag-import" component={TagImportPage} />
       <Route component={NotFound} />
     </Switch>
   );

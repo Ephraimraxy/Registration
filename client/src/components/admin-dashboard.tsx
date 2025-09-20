@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { db } from "@/lib/firebase";
 import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
-import { UploadModal } from "./upload-modal";
+// Removed UploadModal import - now using separate pages
 import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
@@ -29,8 +29,7 @@ export function AdminDashboard() {
   const [tags, setTags] = useState<TagType[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
+  // Removed upload modal state - now using separate pages
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
@@ -194,8 +193,11 @@ export function AdminDashboard() {
   }, [users, searchQuery, genderFilter, wingFilter, stateFilter]);
 
   const handleUpload = (type: 'rooms' | 'tags') => {
-    setUploadType(type);
-    setShowUploadModal(true);
+    if (type === 'rooms') {
+      setLocation('/room-import');
+    } else {
+      setLocation('/tag-import');
+    }
   };
 
   const handleExport = () => {
@@ -884,12 +886,6 @@ export function AdminDashboard() {
       />
 
       {/* Modals */}
-      {showUploadModal && (
-        <UploadModal
-          type={uploadType}
-          onClose={() => setShowUploadModal(false)}
-        />
-      )}
 
       {editingUser && (
         <EditStudentModal

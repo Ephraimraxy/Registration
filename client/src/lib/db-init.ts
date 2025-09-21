@@ -2,6 +2,8 @@ import { collection, addDoc, doc, setDoc, getDocs, query, where, Timestamp, dele
 import { db } from "./firebase";
 import { Room, Tag, InsertRoom, InsertTag } from "@shared/schema";
 
+// Force rebuild - exports for room and tag imports
+
 // No hardcoded sample data - system starts completely empty
 
 // Removed sample data initialization - system starts empty

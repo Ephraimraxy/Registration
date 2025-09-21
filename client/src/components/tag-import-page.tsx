@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Tag, Users } from "lucide-react";
 import { parseTagsExcel } from "@/lib/excel-utils";
-// import { addTag } from "../lib/db-init";
+import { addTag } from "@/lib/db-init";
 import { useToast } from "@/hooks/use-toast";
 import { Tag as TagType } from "@shared/schema";
 
@@ -64,8 +64,7 @@ export function TagImportPage() {
         setStatus(`Processing tag ${i + 1} of ${tags.length}: ${tag.tagNumber}`);
 
         try {
-          // TODO: Implement addTag function
-          // await addTag(tag);
+          await addTag(tag);
           successCount++;
         } catch (error) {
           errorCount++;

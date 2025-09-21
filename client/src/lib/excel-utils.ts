@@ -142,7 +142,7 @@ export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
             : generateDefaultBedNumbers(row['Total Beds']);
           
           // Check if this is a VIP/reserved room
-          const isVipRoom = row['Bed Numbers'] && row['Bed Numbers'].toString().trim().toUpperCase() === 'RESERVED';
+          const isVipRoom = Boolean(row['Bed Numbers'] && row['Bed Numbers'].toString().trim().toUpperCase() === 'RESERVED');
           
           return {
             wing: wing,

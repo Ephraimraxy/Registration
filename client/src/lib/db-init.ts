@@ -1,50 +1,9 @@
 import { collection, addDoc, doc, setDoc, getDocs, query, where, Timestamp, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { Room, Tag, InsertRoom, InsertTag } from "@shared/schema";
-
-// Force rebuild - exports for room and tag imports
 
 // No hardcoded sample data - system starts completely empty
 
 // Removed sample data initialization - system starts empty
-
-/**
- * Add a new room to the database
- */
-export const addRoom = async (roomData: InsertRoom): Promise<string> => {
-  try {
-    const roomRef = await addDoc(collection(db, "rooms"), {
-      ...roomData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-    
-    console.log("Room added successfully:", roomRef.id);
-    return roomRef.id;
-  } catch (error) {
-    console.error("Error adding room:", error);
-    throw new Error("Failed to add room");
-  }
-};
-
-/**
- * Add a new tag to the database
- */
-export const addTag = async (tagData: InsertTag): Promise<string> => {
-  try {
-    const tagRef = await addDoc(collection(db, "tags"), {
-      ...tagData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-    
-    console.log("Tag added successfully:", tagRef.id);
-    return tagRef.id;
-  } catch (error) {
-    console.error("Error adding tag:", error);
-    throw new Error("Failed to add tag");
-  }
-};
 
 /**
  * Clear all data from the database

@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, BookOpen } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { db } from "@/lib/firebase";
 import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
 import { StudentTable } from "./student-table";
-// Removed UploadModal import - now using separate pages
+import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { exportUsersToExcel } from "@/lib/excel-utils";
@@ -29,7 +29,8 @@ export function AdminDashboard() {
   const [tags, setTags] = useState<TagType[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   
-  // Removed upload modal state - now using separate pages
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
@@ -193,12 +194,8 @@ export function AdminDashboard() {
   }, [users, searchQuery, genderFilter, wingFilter, stateFilter]);
 
   const handleUpload = (type: 'rooms' | 'tags') => {
-    console.log(`Navigating to ${type} import page...`);
-    if (type === 'rooms') {
-      setLocation('/room-import');
-    } else {
-      setLocation('/tag-import');
-    }
+    setUploadType(type);
+    setShowUploadModal(true);
   };
 
   const handleExport = () => {
@@ -514,10 +511,6 @@ export function AdminDashboard() {
             <Button onClick={() => handleUpload('tags')} data-testid="button-upload-tags">
               <Upload className="mr-2 h-4 w-4" />
               Upload Tags (Excel)
-            </Button>
-            <Button onClick={() => setLocation('/attendance')} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <BookOpen className="mr-2 h-4 w-4" />
-              📚 Course Management
             </Button>
             <div className="flex flex-col gap-4">
               {/* Export Format Selection */}
@@ -891,6 +884,12 @@ export function AdminDashboard() {
       />
 
       {/* Modals */}
+      {showUploadModal && (
+        <UploadModal
+          type={uploadType}
+          onClose={() => setShowUploadModal(false)}
+        />
+      )}
 
       {editingUser && (
         <EditStudentModal

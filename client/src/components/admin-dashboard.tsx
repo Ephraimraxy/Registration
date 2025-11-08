@@ -29,6 +29,9 @@ export function AdminDashboard() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [tags, setTags] = useState<TagType[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [maleCount, setMaleCount] = useState(0);
+  const [femaleCount, setFemaleCount] = useState(0);
+  const [previousUserIds, setPreviousUserIds] = useState<Set<string>>(new Set());
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadType, setUploadType] = useState<'rooms' | 'tags' | 'users'>('rooms');
@@ -55,6 +58,60 @@ export function AdminDashboard() {
   
   const { toast } = useToast();
 
+  // Request notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Function to play beep sound
+  const playBeepSound = () => {
+    try {
+      // Create a simple beep using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800; // Beep frequency
+      oscillator.type = "sine";
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log("Could not play beep sound:", error);
+    }
+  };
+
+  // Function to show browser notification
+  const showNewUserNotification = (user: User) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const notification = new Notification("🎉 New User Registered!", {
+        body: `${user.firstName} ${user.surname} (${user.gender}) - ${user.stateOfOrigin || "N/A"}`,
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        tag: `user-${user.id}`,
+        requireInteraction: false,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      // Auto close after 5 seconds
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
+    }
+  };
+
   // Force refresh function
   const refreshData = async () => {
     try {
@@ -67,7 +124,7 @@ export function AdminDashboard() {
       const userData = usersSnapshot.docs
         .filter(doc => {
           const data = doc.data();
-          return data.firstName && data.surname && data.email && !data._placeholder;
+          return data.firstName && data.surname && !data._placeholder;
         })
         .map(doc => ({
           id: doc.id,
@@ -116,16 +173,43 @@ export function AdminDashboard() {
         const userData = snapshot.docs
           .filter(doc => {
             const data = doc.data();
-            // Filter out placeholder documents and invalid users
-            return data.firstName && data.surname && data.email && !data._placeholder;
+            // Filter out placeholder documents and invalid users (email is now optional)
+            return data.firstName && data.surname && !data._placeholder;
           })
           .map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
         })) as User[];
+        
+        // Detect new users
+        const currentUserIds = new Set(userData.map(u => u.id));
+        const newUsers = userData.filter(user => !previousUserIds.has(user.id));
+        
+        // Update previous user IDs
+        setPreviousUserIds(currentUserIds);
+        
+        // Show notifications and play beep for new users
+        if (newUsers.length > 0 && previousUserIds.size > 0) {
+          newUsers.forEach(user => {
+            playBeepSound();
+            showNewUserNotification(user);
+            toast({
+              title: "🎉 New Registration!",
+              description: `${user.firstName} ${user.surname} (${user.gender}) has been registered.`,
+              duration: 5000,
+            });
+          });
+        }
+        
         setUsers(userData);
         console.log("Users updated:", userData.length, "valid users");
+        
+        // Calculate gender counts
+        const male = userData.filter(u => u.gender === "Male").length;
+        const female = userData.filter(u => u.gender === "Female").length;
+        setMaleCount(male);
+        setFemaleCount(female);
       }
     );
 
@@ -502,8 +586,9 @@ export function AdminDashboard() {
         <p className="text-sm sm:text-base text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
       </div>
 
-      {/* Total Users Card */}
-      <div className="max-w-sm">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Total Users Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -515,6 +600,40 @@ export function AdminDashboard() {
               </div>
               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Male Users Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Male Users</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="stat-male-users">
+                  {maleCount}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Female Users Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Female Users</p>
+                <p className="text-2xl font-bold text-pink-600 dark:text-pink-400" data-testid="stat-female-users">
+                  {femaleCount}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-pink-100 dark:bg-pink-900/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
               </div>
             </div>
           </CardContent>

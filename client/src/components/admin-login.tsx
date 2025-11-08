@@ -68,7 +68,7 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
+                <Mail className="h-4 w-4 text-foreground" />
                 Email
               </Label>
               <Input
@@ -85,7 +85,7 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
+                <Lock className="h-4 w-4 text-foreground" />
                 Password
               </Label>
               <Input

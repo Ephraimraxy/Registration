@@ -141,7 +141,7 @@ export async function flexibleAssignRoomAndTag(
         }
 
         // Step 3: Validate user data
-        if (!userData.firstName || !userData.surname || !userData.email || !userData.phone) {
+        if (!userData.firstName || !userData.surname || !userData.phone) {
           throw new Error("Invalid user data: missing required fields");
         }
 

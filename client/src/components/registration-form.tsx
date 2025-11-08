@@ -847,8 +847,6 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           </CardContent>
         </Card>
       </div>
-
-    </>
   );
 }
 

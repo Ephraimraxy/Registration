@@ -440,7 +440,7 @@ export function AdminDashboard() {
               </div>
               <div>
                 <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
-                  <span className="hidden sm:inline">🎓 REGISTRATION MANAGEMENT SYSTEM</span>
+                  <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM</span>
                   <span className="sm:hidden">🎓 REGISTRATION</span>
                 </h1>
               </div>

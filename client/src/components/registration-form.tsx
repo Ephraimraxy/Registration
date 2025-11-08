@@ -121,9 +121,12 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         setAvailableRooms(rooms);
         setIsLoadingRooms(false);
         // Clear selection if current selection is no longer available
-        if (selectedRoomId && !rooms.find(r => r.id === selectedRoomId)) {
-          setSelectedRoomId("");
-        }
+        setSelectedRoomId(prev => {
+          if (prev && !rooms.find(r => r.id === prev)) {
+            return "";
+          }
+          return prev;
+        });
       })
       .catch(error => {
         console.error("Error fetching rooms:", error);
@@ -135,9 +138,12 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         setAvailableTags(tags);
         setIsLoadingTags(false);
         // Clear selection if current selection is no longer available
-        if (selectedTagId && !tags.find(t => t.id === selectedTagId)) {
-          setSelectedTagId("");
-        }
+        setSelectedTagId(prev => {
+          if (prev && !tags.find(t => t.id === prev)) {
+            return "";
+          }
+          return prev;
+        });
       })
       .catch(error => {
         console.error("Error fetching tags:", error);
@@ -149,20 +155,26 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       selectedGender as "Male" | "Female",
       (rooms) => {
         setAvailableRooms(rooms);
-        if (selectedRoomId && !rooms.find(r => r.id === selectedRoomId)) {
-          setSelectedRoomId("");
-        }
+        setSelectedRoomId(prev => {
+          if (prev && !rooms.find(r => r.id === prev)) {
+            return "";
+          }
+          return prev;
+        });
       },
       (tags) => {
         setAvailableTags(tags);
-        if (selectedTagId && !tags.find(t => t.id === selectedTagId)) {
-          setSelectedTagId("");
-        }
+        setSelectedTagId(prev => {
+          if (prev && !tags.find(t => t.id === prev)) {
+            return "";
+          }
+          return prev;
+        });
       }
     );
 
     return cleanup;
-  }, [selectedGender, selectedRoomId, selectedTagId]);
+  }, [selectedGender]);
 
   // Check availability when gender changes
   const checkAvailability = async (gender: string) => {
@@ -296,10 +308,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   };
 
   return (
-    <>
-      <div className="max-w-3xl mx-auto">
-        <Card className="shadow-lg">
-          <CardContent className="p-8">
+    <div className="max-w-3xl mx-auto">
+      <Card className="shadow-lg">
+        <CardContent className="p-4 sm:p-6 md:p-8">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">User Registration</h2>
               <p className="text-sm sm:text-base text-muted-foreground">Complete your registration and get your room assignment</p>

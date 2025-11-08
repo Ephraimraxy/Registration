@@ -441,7 +441,7 @@ export function AdminDashboard() {
               <div>
                 <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
                   <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM</span>
-                  <span className="sm:hidden">🎓 REGISTRATION</span>
+                  <span className="sm:hidden">ISAC ACCREDITATION</span>
                 </h1>
               </div>
             </div>

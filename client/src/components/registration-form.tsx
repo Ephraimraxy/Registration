@@ -196,21 +196,6 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     }
   };
 
-  const form = useForm<InsertUser>({
-    resolver: zodResolver(insertUserSchema),
-    defaultValues: {
-      firstName: "",
-      surname: "",
-      middleName: "",
-      dob: "",
-      gender: "Male",
-      phone: "",
-      email: "",
-      stateOfOrigin: "",
-      lga: "",
-    },
-  });
-
   const onSubmit = async (data: InsertUser) => {
     setIsSubmitting(true);
     setRegistrationStatus('validating');

@@ -1,0 +1,46 @@
+[build]
+  # Build command for the client
+  command = "npm run build"
+  
+  # Directory to publish (the built client)
+  publish = "dist"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "20"
+  
+  # Disable secrets scanning for Firebase config (these are public values, not secrets)
+  # Firebase configuration values are NOT secrets - they are publicly exposed client-side
+  # See: https://firebase.google.com/docs/projects/api-keys
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_API_KEY,VITE_FIREBASE_AUTH_DOMAIN,VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_STORAGE_BUCKET,VITE_FIREBASE_MESSAGING_SENDER_ID,VITE_FIREBASE_APP_ID,VITE_FIREBASE_MEASUREMENT_ID"
+
+# Redirect rules for SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache service worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Functions (if you add serverless functions later)
+# [functions]
+#   directory = "netlify/functions"

@@ -580,9 +580,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       name="email"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel>Email Address (Optional)</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="your.email@example.com" {...field} data-testid="input-email" />
+                            <Input type="email" placeholder="your.email@example.com (optional)" {...field} data-testid="input-email" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -594,10 +594,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       name="nin"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>National Identification Number (NIN)</FormLabel>
+                          <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="12345678901" 
+                              placeholder="12345678901 (optional)" 
                               maxLength={11}
                               {...field} 
                               data-testid="input-nin"

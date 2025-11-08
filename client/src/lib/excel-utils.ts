@@ -20,8 +20,8 @@ export interface ExcelUser {
   'Date of Birth': string | Date;
   'Gender': string;
   'Phone': string;
-  'Email': string;
-  'NIN': string;
+  'Email'?: string; // Optional
+  'NIN'?: string; // Optional
   'State of Origin': string;
   'LGA': string;
   'Room Number'?: string; // Optional - can specify room to assign
@@ -240,14 +240,8 @@ export function parseUsersExcel(file: File): Promise<InsertUser[]> {
           
           // Validate required fields
           if (!row['First Name'] || !row['Surname'] || !row['Date of Birth'] || !row['Gender'] || 
-              !row['Phone'] || !row['Email'] || !row['NIN'] || !row['State of Origin'] || !row['LGA']) {
-            throw new Error(`Missing required fields in row ${rowNum}. Required: First Name, Surname, Date of Birth, Gender, Phone, Email, NIN, State of Origin, LGA`);
-          }
-          
-          // Validate NIN format (11 digits)
-          const nin = row['NIN'].toString().trim();
-          if (!/^\d{11}$/.test(nin)) {
-            throw new Error(`Invalid NIN in row ${rowNum}. NIN must be exactly 11 digits. Got: "${nin}"`);
+              !row['Phone'] || !row['State of Origin'] || !row['LGA']) {
+            throw new Error(`Missing required fields in row ${rowNum}. Required: First Name, Surname, Date of Birth, Gender, Phone, State of Origin, LGA`);
           }
           
           // Validate phone (minimum 10 digits)
@@ -256,11 +250,29 @@ export function parseUsersExcel(file: File): Promise<InsertUser[]> {
             throw new Error(`Invalid phone number in row ${rowNum}. Phone must be at least 10 digits. Got: "${phone}"`);
           }
           
-          // Validate email format
-          const email = row['Email'].toString().trim();
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(email)) {
-            throw new Error(`Invalid email in row ${rowNum}. Got: "${email}"`);
+          // Validate email format if provided
+          let email: string | undefined = undefined;
+          if (row['Email']) {
+            const emailStr = row['Email'].toString().trim();
+            if (emailStr) {
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(emailStr)) {
+                throw new Error(`Invalid email in row ${rowNum}. Got: "${emailStr}"`);
+              }
+              email = emailStr;
+            }
+          }
+          
+          // Validate NIN format (11 digits) if provided
+          let nin: string | undefined = undefined;
+          if (row['NIN']) {
+            const ninStr = row['NIN'].toString().trim();
+            if (ninStr) {
+              if (!/^\d{11}$/.test(ninStr)) {
+                throw new Error(`Invalid NIN in row ${rowNum}. NIN must be exactly 11 digits. Got: "${ninStr}"`);
+              }
+              nin = ninStr;
+            }
           }
           
           // Normalize gender

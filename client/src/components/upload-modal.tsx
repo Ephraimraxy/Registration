@@ -122,17 +122,41 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
             existingData: existingTagSnapshot.empty ? null : existingTagSnapshot.docs[0].data()
           };
         } else {
-          // For users, check by email (unique identifier)
-          const existingUserQuery = query(
-            collection(db, "users"),
-            where("email", "==", item.email)
-          );
-          const existingUserSnapshot = await getDocs(existingUserQuery);
+          // For users, check by email if provided, otherwise check by phone + name combination
+          let exists = false;
+          let existingData = null;
+          
+          if (item.email) {
+            const existingUserQuery = query(
+              collection(db, "users"),
+              where("email", "==", item.email)
+            );
+            const existingUserSnapshot = await getDocs(existingUserQuery);
+            exists = !existingUserSnapshot.empty;
+            if (exists) {
+              existingData = existingUserSnapshot.docs[0].data();
+            }
+          } else {
+            // If no email, check by phone + firstName + surname combination
+            const existingUserQuery = query(
+              collection(db, "users"),
+              where("phone", "==", item.phone)
+            );
+            const existingUserSnapshot = await getDocs(existingUserQuery);
+            const matchingUsers = existingUserSnapshot.docs.filter(doc => {
+              const data = doc.data();
+              return data.firstName === item.firstName && data.surname === item.surname;
+            });
+            exists = matchingUsers.length > 0;
+            if (exists) {
+              existingData = matchingUsers[0].data();
+            }
+          }
           
           return {
             item,
-            exists: !existingUserSnapshot.empty,
-            existingData: existingUserSnapshot.empty ? null : existingUserSnapshot.docs[0].data()
+            exists,
+            existingData
           };
         }
       });
@@ -481,19 +505,19 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">
                       <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">📊 Required Columns:</p>
                       <p className="text-gray-700 dark:text-gray-300 font-mono text-xs">
-                        First Name, Surname, Date of Birth, Gender, Phone, Email, NIN, State of Origin, LGA
+                        First Name, Surname, Date of Birth, Gender, Phone, State of Origin, LGA
                       </p>
                     </div>
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">
                       <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">📊 Optional Columns:</p>
                       <p className="text-gray-700 dark:text-gray-300 font-mono text-xs">
-                        Middle Name, Room Number, Tag Number, VIP
+                        Middle Name, Email, NIN, Room Number, Tag Number, VIP
                       </p>
                     </div>
                   </div>
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
                     <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-                      <strong>💡 Note:</strong> All required fields must be filled. NIN must be exactly 11 digits. Phone must be at least 10 digits.
+                      <strong>💡 Note:</strong> All required fields must be filled. Phone must be at least 10 digits. Email and NIN are optional.
                     </p>
                     <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
                       <strong>🏠 Room/Tag Assignment:</strong> If Room Number or Tag Number is specified, the system will try to assign them. Otherwise, rooms and tags will be assigned automatically or marked as pending.

@@ -101,7 +101,6 @@ export const validateRegistrationData = (data: any) => {
     { field: 'dob', message: 'Date of birth is required' },
     { field: 'gender', message: 'Gender is required' },
     { field: 'phone', message: 'Phone number is required' },
-    { field: 'email', message: 'Email is required' },
     { field: 'stateOfOrigin', message: 'State of origin is required' },
     { field: 'lga', message: 'LGA is required' }
   ];
@@ -110,9 +109,13 @@ export const validateRegistrationData = (data: any) => {
     if (!data[field]?.trim()) errors.push(message);
   });
   
-  // Format validation
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+  // Format validation (only if provided)
+  if (data.email && data.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
     errors.push("Invalid email format");
+  }
+  
+  if (data.nin && data.nin.trim() && !/^\d{11}$/.test(data.nin)) {
+    errors.push("NIN must be exactly 11 digits");
   }
   
   if (data.phone && !/^[0-9]{10,11}$/.test(data.phone.replace(/\D/g, ''))) {

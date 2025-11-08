@@ -858,10 +858,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                   </Button>
                 </div>
               </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

@@ -112,68 +112,83 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       return;
     }
 
+    let isMounted = true;
+
     setIsLoadingRooms(true);
     setIsLoadingTags(true);
     
-    // Fetch rooms and tags
-    fetchAvailableRooms(selectedGender as "Male" | "Female")
-      .then(rooms => {
-        setAvailableRooms(rooms);
-        setIsLoadingRooms(false);
-        // Clear selection if current selection is no longer available
-        setSelectedRoomId(prev => {
-          if (prev && !rooms.find(r => r.id === prev)) {
-            return "";
-          }
-          return prev;
-        });
+    // Fetch rooms and tags with error handling
+    Promise.all([
+      fetchAvailableRooms(selectedGender as "Male" | "Female").catch(err => {
+        console.error("Error fetching rooms:", err);
+        return [];
+      }),
+      fetchAvailableTags().catch(err => {
+        console.error("Error fetching tags:", err);
+        return [];
       })
-      .catch(error => {
-        console.error("Error fetching rooms:", error);
-        setIsLoadingRooms(false);
+    ]).then(([rooms, tags]) => {
+      if (!isMounted) return;
+      
+      setAvailableRooms(rooms);
+      setIsLoadingRooms(false);
+      setAvailableTags(tags);
+      setIsLoadingTags(false);
+      
+      // Clear selection if current selection is no longer available
+      setSelectedRoomId(prev => {
+        if (prev && !rooms.find(r => r.id === prev)) {
+          return "";
+        }
+        return prev;
       });
-
-    fetchAvailableTags()
-      .then(tags => {
-        setAvailableTags(tags);
-        setIsLoadingTags(false);
-        // Clear selection if current selection is no longer available
-        setSelectedTagId(prev => {
-          if (prev && !tags.find(t => t.id === prev)) {
-            return "";
-          }
-          return prev;
-        });
-      })
-      .catch(error => {
-        console.error("Error fetching tags:", error);
-        setIsLoadingTags(false);
+      
+      setSelectedTagId(prev => {
+        if (prev && !tags.find(t => t.id === prev)) {
+          return "";
+        }
+        return prev;
       });
+    });
 
-    // Set up real-time listeners
-    const cleanup = setupRoomTagListeners(
-      selectedGender as "Male" | "Female",
-      (rooms) => {
-        setAvailableRooms(rooms);
-        setSelectedRoomId(prev => {
-          if (prev && !rooms.find(r => r.id === prev)) {
-            return "";
-          }
-          return prev;
-        });
-      },
-      (tags) => {
-        setAvailableTags(tags);
-        setSelectedTagId(prev => {
-          if (prev && !tags.find(t => t.id === prev)) {
-            return "";
-          }
-          return prev;
-        });
+    // Set up real-time listeners with error handling
+    let cleanup: (() => void) | undefined;
+    try {
+      cleanup = setupRoomTagListeners(
+        selectedGender as "Male" | "Female",
+        (rooms) => {
+          if (!isMounted) return;
+          setAvailableRooms(rooms);
+          setSelectedRoomId(prev => {
+            if (prev && !rooms.find(r => r.id === prev)) {
+              return "";
+            }
+            return prev;
+          });
+        },
+        (tags) => {
+          if (!isMounted) return;
+          setAvailableTags(tags);
+          setSelectedTagId(prev => {
+            if (prev && !tags.find(t => t.id === prev)) {
+              return "";
+            }
+            return prev;
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Error setting up room/tag listeners:", error);
+      setIsLoadingRooms(false);
+      setIsLoadingTags(false);
+    }
+
+    return () => {
+      isMounted = false;
+      if (cleanup) {
+        cleanup();
       }
-    );
-
-    return cleanup;
+    };
   }, [selectedGender]);
 
   // Check availability when gender changes

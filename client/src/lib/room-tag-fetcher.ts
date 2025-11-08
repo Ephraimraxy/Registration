@@ -21,6 +21,7 @@ export interface AvailableTag {
  */
 export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<AvailableRoom[]> {
   try {
+    // Try the composite query first (requires index)
     const roomsQuery = query(
       collection(db, "rooms"),
       where("gender", "==", gender),
@@ -45,7 +46,36 @@ export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<Av
         // Sort by room number for consistency
         return a.roomNumber.localeCompare(b.roomNumber);
       });
-  } catch (error) {
+  } catch (error: any) {
+    // If index error, fallback to fetching all rooms and filtering client-side
+    if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
+      console.warn("Firestore index not found. Falling back to client-side filtering. Please create the index:", error);
+      try {
+        // Fetch all rooms and filter client-side
+        const allRoomsQuery = query(collection(db, "rooms"));
+        const snapshot = await getDocs(allRoomsQuery);
+        
+        return snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              roomNumber: data.roomNumber,
+              wing: data.wing,
+              gender: data.gender as "Male" | "Female",
+              availableBeds: data.availableBeds,
+              totalBeds: data.totalBeds,
+            };
+          })
+          .filter(room => room.gender === gender && room.availableBeds > 0)
+          .sort((a, b) => {
+            return a.roomNumber.localeCompare(b.roomNumber);
+          });
+      } catch (fallbackError) {
+        console.error("Error in fallback room fetch:", fallbackError);
+        return [];
+      }
+    }
     console.error("Error fetching available rooms:", error);
     return [];
   }
@@ -94,30 +124,87 @@ export function setupRoomTagListeners(
   const unsubscribes: Unsubscribe[] = [];
 
   if (gender) {
-    const roomsQuery = query(
-      collection(db, "rooms"),
-      where("gender", "==", gender),
-      where("availableBeds", ">", 0)
-    );
-    
-    const roomsUnsubscribe = onSnapshot(roomsQuery, (snapshot) => {
-      const rooms = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            roomNumber: data.roomNumber,
-            wing: data.wing,
-            gender: data.gender as "Male" | "Female",
-            availableBeds: data.availableBeds,
-            totalBeds: data.totalBeds,
-          };
-        })
-        .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-      onRoomsUpdate(rooms);
-    });
-    
-    unsubscribes.push(roomsUnsubscribe);
+    try {
+      const roomsQuery = query(
+        collection(db, "rooms"),
+        where("gender", "==", gender),
+        where("availableBeds", ">", 0)
+      );
+      
+      const roomsUnsubscribe = onSnapshot(
+        roomsQuery,
+        (snapshot) => {
+          const rooms = snapshot.docs
+            .map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                roomNumber: data.roomNumber,
+                wing: data.wing,
+                gender: data.gender as "Male" | "Female",
+                availableBeds: data.availableBeds,
+                totalBeds: data.totalBeds,
+              };
+            })
+            .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+          onRoomsUpdate(rooms);
+        },
+        (error: any) => {
+          // If index error, fallback to fetching all rooms and filtering client-side
+          if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
+            console.warn("Firestore index not found for real-time listener. Using fallback.");
+            const allRoomsQuery = query(collection(db, "rooms"));
+            const fallbackUnsubscribe = onSnapshot(allRoomsQuery, (snapshot) => {
+              const rooms = snapshot.docs
+                .map(doc => {
+                  const data = doc.data();
+                  return {
+                    id: doc.id,
+                    roomNumber: data.roomNumber,
+                    wing: data.wing,
+                    gender: data.gender as "Male" | "Female",
+                    availableBeds: data.availableBeds,
+                    totalBeds: data.totalBeds,
+                  };
+                })
+                .filter(room => room.gender === gender && room.availableBeds > 0)
+                .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+              onRoomsUpdate(rooms);
+            });
+            unsubscribes.push(fallbackUnsubscribe);
+          } else {
+            console.error("Error in rooms listener:", error);
+            onRoomsUpdate([]);
+          }
+        }
+      );
+      
+      unsubscribes.push(roomsUnsubscribe);
+    } catch (error: any) {
+      // Fallback if query creation fails
+      if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
+        console.warn("Firestore index not found. Using fallback listener.");
+        const allRoomsQuery = query(collection(db, "rooms"));
+        const fallbackUnsubscribe = onSnapshot(allRoomsQuery, (snapshot) => {
+          const rooms = snapshot.docs
+            .map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                roomNumber: data.roomNumber,
+                wing: data.wing,
+                gender: data.gender as "Male" | "Female",
+                availableBeds: data.availableBeds,
+                totalBeds: data.totalBeds,
+              };
+            })
+            .filter(room => room.gender === gender && room.availableBeds > 0)
+            .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+          onRoomsUpdate(rooms);
+        });
+        unsubscribes.push(fallbackUnsubscribe);
+      }
+    }
   }
 
   const tagsQuery = query(

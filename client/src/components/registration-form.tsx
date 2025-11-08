@@ -448,30 +448,24 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <Building className="h-4 w-4" />
                             Select Room (Optional)
                           </FormLabel>
-                          <Select 
-                            value={selectedRoomId} 
-                            onValueChange={setSelectedRoomId}
-                            disabled={isLoadingRooms || availableRooms.length === 0}
-                          >
-                            <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                              <SelectValue 
-                                placeholder={
-                                  isLoadingRooms 
-                                    ? "Loading rooms..." 
-                                    : availableRooms.length === 0 
-                                      ? "No rooms available (will be assigned automatically)" 
-                                      : "Select a room or leave empty for auto-assignment"
-                                } 
-                                className="text-gray-900 dark:text-gray-100" 
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                              <SelectItem 
-                                value=""
-                                className="hover:bg-gray-50 dark:hover:bg-gray-800/40 text-gray-500 dark:text-gray-400"
-                              >
-                                Auto-assign room
-                              </SelectItem>
+                        <Select 
+                          value={selectedRoomId || undefined} 
+                          onValueChange={(value) => setSelectedRoomId(value || "")}
+                          disabled={isLoadingRooms || availableRooms.length === 0}
+                        >
+                          <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                            <SelectValue 
+                              placeholder={
+                                isLoadingRooms 
+                                  ? "Loading rooms..." 
+                                  : availableRooms.length === 0 
+                                    ? "No rooms available (will be assigned automatically)" 
+                                    : "Select a room or leave empty for auto-assignment"
+                              } 
+                              className="text-gray-900 dark:text-gray-100" 
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                               {availableRooms.map((room, index) => (
                                 <SelectItem 
                                   key={room.id} 
@@ -518,8 +512,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           Select Tag (Optional)
                         </FormLabel>
                         <Select 
-                          value={selectedTagId} 
-                          onValueChange={setSelectedTagId}
+                          value={selectedTagId || undefined} 
+                          onValueChange={(value) => setSelectedTagId(value || "")}
                           disabled={isLoadingTags || availableTags.length === 0}
                         >
                           <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
@@ -534,13 +528,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               className="text-gray-900 dark:text-gray-100" 
                             />
                           </SelectTrigger>
-                          <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                            <SelectItem 
-                              value=""
-                              className="hover:bg-gray-50 dark:hover:bg-gray-800/40 text-gray-500 dark:text-gray-400"
-                            >
-                              Auto-assign tag
-                            </SelectItem>
+                        <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                             {availableTags.map((tag, index) => (
                               <SelectItem 
                                 key={tag.id} 

@@ -359,12 +359,17 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         'Date of Birth': user.dob ? new Date(user.dob).toLocaleDateString() : '',
         'Gender': user.gender || '',
         'Phone': user.phone || '',
-        'Email': user.email || '',
+        'Email': user.email || 'Not provided',
         'NIN': user.nin || 'Not provided',
         'State of Origin': user.stateOfOrigin || '',
         'LGA': user.lga || '',
+        'Wing': (user as any).wing || 'Not assigned',
         'Room Number': user.roomNumber || 'Not assigned',
+        'Bed Number': user.bedNumber || 'Not assigned',
+        'Room Status': user.roomStatus || 'Not assigned',
         'Tag Number': user.tagNumber || 'Not assigned',
+        'Tag Status': user.tagStatus || 'Not assigned',
+        'VIP Status': (user as any).isVip ? 'Yes' : 'No',
         'Registration Date': user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
       }));
     }
@@ -395,8 +400,13 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         { wch: 15 }, // NIN
         { wch: 20 }, // State of Origin
         { wch: 20 }, // LGA
+        { wch: 10 }, // Wing
         { wch: 12 }, // Room Number
+        { wch: 12 }, // Bed Number
+        { wch: 12 }, // Room Status
         { wch: 12 }, // Tag Number
+        { wch: 12 }, // Tag Status
+        { wch: 10 }, // VIP Status
         { wch: 15 }, // Registration Date
       ];
     }

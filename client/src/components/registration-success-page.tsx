@@ -78,7 +78,7 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950 p-3 sm:p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -97,7 +97,7 @@ export function RegistrationSuccessPage({ user, onBack, onNewRegistration }: Reg
                 <CheckCircle className="h-12 w-12 text-white" />
               </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4 drop-shadow-lg">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4 drop-shadow-lg">
               🎉 Registration Successful!
             </h1>
             <p className="text-lg text-gray-700 dark:text-gray-300 font-medium">

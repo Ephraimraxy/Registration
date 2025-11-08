@@ -432,34 +432,37 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
       {/* Navigation */}
       <nav className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                <Building className="h-8 w-8 text-white" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 py-3 sm:py-0 sm:h-20">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-center sm:justify-start">
+              <div className="p-1.5 sm:p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Building className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white drop-shadow-lg">
-                  🎓 REGISTRATION MANAGEMENT SYSTEM
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
+                  <span className="hidden sm:inline">🎓 REGISTRATION MANAGEMENT SYSTEM</span>
+                  <span className="sm:hidden">🎓 REGISTRATION</span>
                 </h1>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Link href="/">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <Link href="/" className="w-full sm:w-auto">
                 <Button
                   variant="default"
-                  className="px-6 py-3 font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
-                  👤 Register User
+                  <span className="hidden sm:inline">👤 Register User</span>
+                  <span className="sm:hidden">Register</span>
                 </Button>
               </Link>
               <Button
                 variant="secondary"
-                className="px-6 py-3 font-semibold transition-all duration-300 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30"
               >
                 <Settings className="mr-2 h-4 w-4" />
-                ⚙️ Admin Dashboard
+                <span className="hidden sm:inline">⚙️ Admin Dashboard</span>
+                <span className="sm:hidden">Admin</span>
               </Button>
               <Button
                 variant="outline"
@@ -479,10 +482,11 @@ export function AdminDashboard() {
                     });
                   }
                 }}
-                className="px-6 py-3 font-semibold transition-all duration-300 bg-red-500/20 text-white hover:bg-red-500/30 backdrop-blur-sm border-red-300/30"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-red-500/20 text-white hover:bg-red-500/30 backdrop-blur-sm border-red-300/30"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                🚪 Logout
+                <span className="hidden sm:inline">🚪 Logout</span>
+                <span className="sm:hidden">Logout</span>
               </Button>
             </div>
           </div>
@@ -490,12 +494,12 @@ export function AdminDashboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
-        <p className="text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
+        <p className="text-sm sm:text-base text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
       </div>
 
       {/* Total Users Card */}
@@ -523,7 +527,7 @@ export function AdminDashboard() {
           <CardTitle>Management Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
             <Button onClick={() => setLocation('/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <Building className="mr-2 h-4 w-4" />
               🏠 View Rooms & Tags Details
@@ -536,9 +540,9 @@ export function AdminDashboard() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Tags (Excel)
             </Button>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
               {/* Export Format Selection */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
                   <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
                     <SelectValue className="text-gray-900 dark:text-gray-100" />
@@ -615,7 +619,7 @@ export function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Delete Available Tags */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -759,7 +763,7 @@ export function AdminDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <Input
                 placeholder="Search users..."

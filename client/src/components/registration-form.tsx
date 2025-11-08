@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema, type InsertUser } from "@shared/schema";
@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag } from "lucide-react";
 import { validateRegistrationData } from "@/lib/firebase";
 import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
 import { validateAvailability } from "@/lib/availability-utils";
+import { fetchAvailableRooms, fetchAvailableTags, setupRoomTagListeners, type AvailableRoom, type AvailableTag } from "@/lib/room-tag-fetcher";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -78,7 +79,90 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     availableRoomCount: number;
     availableTagCount: number;
   } | null>(null);
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
+  const [availableTags, setAvailableTags] = useState<AvailableTag[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [selectedTagId, setSelectedTagId] = useState<string>("");
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
   const { toast } = useToast();
+  
+  const form = useForm<InsertUser>({
+    resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      firstName: "",
+      surname: "",
+      middleName: "",
+      dob: "",
+      gender: "Male",
+      phone: "",
+      email: "",
+      stateOfOrigin: "",
+      lga: "",
+    },
+  });
+  
+  const selectedGender = form.watch("gender");
+
+  // Fetch rooms and tags when gender changes
+  useEffect(() => {
+    if (!selectedGender) {
+      setAvailableRooms([]);
+      setSelectedRoomId("");
+      return;
+    }
+
+    setIsLoadingRooms(true);
+    setIsLoadingTags(true);
+    
+    // Fetch rooms and tags
+    fetchAvailableRooms(selectedGender as "Male" | "Female")
+      .then(rooms => {
+        setAvailableRooms(rooms);
+        setIsLoadingRooms(false);
+        // Clear selection if current selection is no longer available
+        if (selectedRoomId && !rooms.find(r => r.id === selectedRoomId)) {
+          setSelectedRoomId("");
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching rooms:", error);
+        setIsLoadingRooms(false);
+      });
+
+    fetchAvailableTags()
+      .then(tags => {
+        setAvailableTags(tags);
+        setIsLoadingTags(false);
+        // Clear selection if current selection is no longer available
+        if (selectedTagId && !tags.find(t => t.id === selectedTagId)) {
+          setSelectedTagId("");
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching tags:", error);
+        setIsLoadingTags(false);
+      });
+
+    // Set up real-time listeners
+    const cleanup = setupRoomTagListeners(
+      selectedGender as "Male" | "Female",
+      (rooms) => {
+        setAvailableRooms(rooms);
+        if (selectedRoomId && !rooms.find(r => r.id === selectedRoomId)) {
+          setSelectedRoomId("");
+        }
+      },
+      (tags) => {
+        setAvailableTags(tags);
+        if (selectedTagId && !tags.find(t => t.id === selectedTagId)) {
+          setSelectedTagId("");
+        }
+      }
+    );
+
+    return cleanup;
+  }, [selectedGender, selectedRoomId, selectedTagId]);
 
   // Check availability when gender changes
   const checkAvailability = async (gender: string) => {
@@ -149,9 +233,16 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       }
 
       // Use flexible assignment utility (allows partial assignments)
+      // Include selected room/tag IDs if provided
+      const registrationData = {
+        ...data,
+        selectedRoomId: selectedRoomId || undefined,
+        selectedTagId: selectedTagId || undefined,
+      };
+      
       setRegistrationStatus('finding-room');
       setRegistrationProgress(30);
-      const result = await flexibleAssignRoomAndTag(data);
+      const result = await flexibleAssignRoomAndTag(registrationData);
       if (!result.success || !result.userData) {
         throw new Error(result.error || 'Registration failed');
       }
@@ -224,9 +315,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       <div className="max-w-3xl mx-auto">
         <Card className="shadow-lg">
           <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">User Registration</h2>
-              <p className="text-muted-foreground">Complete your registration and get your room assignment</p>
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">User Registration</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Complete your registration and get your room assignment</p>
             </div>
 
             <Form {...form}>
@@ -304,6 +395,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <Select onValueChange={(value) => {
                             field.onChange(value);
                             checkAvailability(value);
+                            // Reset room selection when gender changes
+                            setSelectedRoomId("");
                           }} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-gender" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
@@ -335,6 +428,135 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         </FormItem>
                       )}
                     />
+                    
+                    {/* Room Selection - appears after gender */}
+                    {selectedGender && (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="flex items-center gap-2">
+                          <Building className="h-4 w-4" />
+                          Select Room (Optional)
+                        </FormLabel>
+                        <Select 
+                          value={selectedRoomId} 
+                          onValueChange={setSelectedRoomId}
+                          disabled={isLoadingRooms || availableRooms.length === 0}
+                        >
+                          <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                            <SelectValue 
+                              placeholder={
+                                isLoadingRooms 
+                                  ? "Loading rooms..." 
+                                  : availableRooms.length === 0 
+                                    ? "No rooms available (will be assigned automatically)" 
+                                    : "Select a room or leave empty for auto-assignment"
+                              } 
+                              className="text-gray-900 dark:text-gray-100" 
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                            <SelectItem 
+                              value=""
+                              className="hover:bg-gray-50 dark:hover:bg-gray-800/40 text-gray-500 dark:text-gray-400"
+                            >
+                              Auto-assign room
+                            </SelectItem>
+                            {availableRooms.map((room, index) => (
+                              <SelectItem 
+                                key={room.id} 
+                                value={room.id}
+                                className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                  index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                  index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                                  index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                                  'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
+                                }`}
+                              >
+                                <span className="flex items-center justify-between w-full text-gray-900 dark:text-gray-100">
+                                  <span className="flex items-center gap-2">
+                                    <span className={`w-3 h-3 rounded-full shadow-sm ${
+                                      index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                                      index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                                      index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                                      'bg-gradient-to-r from-blue-500 to-blue-600'
+                                    }`}></span>
+                                    <strong>{room.roomNumber}</strong> (Wing {room.wing})
+                                  </span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                    {room.availableBeds} bed{room.availableBeds !== 1 ? 's' : ''} available
+                                  </span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {availableRooms.length === 0 && !isLoadingRooms && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            💡 No rooms available. Room will be assigned automatically when available.
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                    
+                    {/* Tag Selection */}
+                    <FormItem className="md:col-span-2">
+                      <FormLabel className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        Select Tag (Optional)
+                      </FormLabel>
+                      <Select 
+                        value={selectedTagId} 
+                        onValueChange={setSelectedTagId}
+                        disabled={isLoadingTags || availableTags.length === 0}
+                      >
+                        <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                          <SelectValue 
+                            placeholder={
+                              isLoadingTags 
+                                ? "Loading tags..." 
+                                : availableTags.length === 0 
+                                  ? "No tags available (will be assigned automatically)" 
+                                  : "Select a tag or leave empty for auto-assignment"
+                            } 
+                            className="text-gray-900 dark:text-gray-100" 
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                          <SelectItem 
+                            value=""
+                            className="hover:bg-gray-50 dark:hover:bg-gray-800/40 text-gray-500 dark:text-gray-400"
+                          >
+                            Auto-assign tag
+                          </SelectItem>
+                          {availableTags.map((tag, index) => (
+                            <SelectItem 
+                              key={tag.id} 
+                              value={tag.id}
+                              className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                index % 4 === 0 ? 'hover:bg-purple-50 dark:hover:bg-purple-900/30 focus:bg-purple-100 dark:focus:bg-purple-800/40' :
+                                index % 4 === 1 ? 'hover:bg-pink-50 dark:hover:bg-pink-900/30 focus:bg-pink-100 dark:focus:bg-pink-800/40' :
+                                index % 4 === 2 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                                'hover:bg-orange-50 dark:hover:bg-orange-900/30 focus:bg-orange-100 dark:focus:bg-orange-800/40'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                <span className={`w-3 h-3 rounded-full shadow-sm ${
+                                  index % 4 === 0 ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
+                                  index % 4 === 1 ? 'bg-gradient-to-r from-pink-500 to-pink-600' :
+                                  index % 4 === 2 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
+                                  'bg-gradient-to-r from-orange-500 to-orange-600'
+                                }`}></span>
+                                Tag {tag.tagNumber}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {availableTags.length === 0 && !isLoadingTags && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          💡 No tags available. Tag will be assigned automatically when available.
+                        </p>
+                      )}
+                    </FormItem>
                     
                     <FormField
                       control={form.control}

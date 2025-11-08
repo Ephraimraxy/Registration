@@ -74,9 +74,32 @@ export async function flexibleAssignRoomAndTag(
         let roomStatus = "pending" as const;
         
         try {
-          roomAssignment = await findAndReserveRoom(transaction, userData.gender, userData.isVip || false);
-          if (roomAssignment) {
-            roomStatus = "assigned";
+          // If user selected a specific room, use it; otherwise find automatically
+          if (userData.selectedRoomId) {
+            const roomRef = doc(db, "rooms", userData.selectedRoomId);
+            const roomSnap = await transaction.get(roomRef);
+            
+            if (roomSnap.exists()) {
+              const roomData = roomSnap.data();
+              // Verify room is available and matches gender
+              if (roomData.availableBeds > 0 && roomData.gender === userData.gender) {
+                roomAssignment = {
+                  roomId: userData.selectedRoomId,
+                  roomNumber: roomData.roomNumber,
+                  wing: roomData.wing,
+                };
+                roomStatus = "assigned";
+              } else {
+                throw new Error("Selected room is no longer available or doesn't match gender");
+              }
+            } else {
+              throw new Error("Selected room not found");
+            }
+          } else {
+            roomAssignment = await findAndReserveRoom(transaction, userData.gender, userData.isVip || false);
+            if (roomAssignment) {
+              roomStatus = "assigned";
+            }
           }
         } catch (error) {
           console.log("No room available, will be pending:", error);
@@ -87,9 +110,31 @@ export async function flexibleAssignRoomAndTag(
         let tagStatus = "pending" as const;
         
         try {
-          tagAssignment = await findAndReserveTag(transaction);
-          if (tagAssignment) {
-            tagStatus = "assigned";
+          // If user selected a specific tag, use it; otherwise find automatically
+          if (userData.selectedTagId) {
+            const tagRef = doc(db, "tags", userData.selectedTagId);
+            const tagSnap = await transaction.get(tagRef);
+            
+            if (tagSnap.exists()) {
+              const tagData = tagSnap.data();
+              // Verify tag is available
+              if (!tagData.isAssigned) {
+                tagAssignment = {
+                  tagId: userData.selectedTagId,
+                  tagNumber: tagData.tagNumber,
+                };
+                tagStatus = "assigned";
+              } else {
+                throw new Error("Selected tag is no longer available");
+              }
+            } else {
+              throw new Error("Selected tag not found");
+            }
+          } else {
+            tagAssignment = await findAndReserveTag(transaction);
+            if (tagAssignment) {
+              tagStatus = "assigned";
+            }
           }
         } catch (error) {
           console.log("No tag available, will be pending:", error);

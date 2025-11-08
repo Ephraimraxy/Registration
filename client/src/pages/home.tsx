@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Building } from "lucide-react";
 import { RegistrationForm } from "@/components/registration-form";
 import { RegistrationSuccessPage } from "@/components/registration-success-page";
-import { ThemeToggle } from "@/components/theme-toggle";
 import type { User } from "@shared/schema";
 
 export default function Home() {
@@ -33,13 +32,10 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
-                  <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM</span>
+                  <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM: REGISTRATION MANAGEMENT SYSTEM</span>
                   <span className="sm:hidden">ISAC ACCREDITATION</span>
                 </h1>
               </div>
-            </div>
-            <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto">
-              <ThemeToggle />
             </div>
           </div>
         </div>

@@ -445,7 +445,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       <div className="md:col-span-2">
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-foreground" />
+                            <Building className="h-4 w-4" />
                             Select Room (Optional)
                           </FormLabel>
                         <Select 
@@ -508,7 +508,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     <div className="md:col-span-2">
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
-                          <Tag className="h-4 w-4 text-foreground" />
+                          <Tag className="h-4 w-4" />
                           Select Tag (Optional)
                         </FormLabel>
                         <Select 

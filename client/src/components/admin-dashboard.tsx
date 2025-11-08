@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -32,7 +31,7 @@ export function AdminDashboard() {
   const [totalStudents, setTotalStudents] = useState(0);
   
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadType, setUploadType] = useState<'rooms' | 'tags'>('rooms');
+  const [uploadType, setUploadType] = useState<'rooms' | 'tags' | 'users'>('rooms');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
@@ -195,7 +194,7 @@ export function AdminDashboard() {
     setFilteredUsers(filtered);
   }, [users, searchQuery, genderFilter, wingFilter, stateFilter]);
 
-  const handleUpload = (type: 'rooms' | 'tags') => {
+  const handleUpload = (type: 'rooms' | 'tags' | 'users') => {
     setUploadType(type);
     setShowUploadModal(true);
   };
@@ -447,7 +446,6 @@ export function AdminDashboard() {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <ThemeToggle />
               <Link href="/" className="w-full sm:w-auto">
                 <Button
                   variant="default"
@@ -541,6 +539,10 @@ export function AdminDashboard() {
             <Button onClick={() => handleUpload('tags')} data-testid="button-upload-tags">
               <Upload className="mr-2 h-4 w-4" />
               Upload Tags (Excel)
+            </Button>
+            <Button onClick={() => handleUpload('users')} data-testid="button-upload-users" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Users (Excel)
             </Button>
             <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
               {/* Export Format Selection */}

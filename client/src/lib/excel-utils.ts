@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { InsertRoom, InsertTag } from '@shared/schema';
+import { InsertRoom, InsertTag, InsertUser } from '@shared/schema';
 
 export interface ExcelRoom {
   Wing: string;
@@ -11,6 +11,22 @@ export interface ExcelRoom {
 
 export interface ExcelTag {
   'Tag Number': string;
+}
+
+export interface ExcelUser {
+  'First Name': string;
+  'Middle Name'?: string;
+  'Surname': string;
+  'Date of Birth': string | Date;
+  'Gender': string;
+  'Phone': string;
+  'Email': string;
+  'NIN': string;
+  'State of Origin': string;
+  'LGA': string;
+  'Room Number'?: string; // Optional - can specify room to assign
+  'Tag Number'?: string; // Optional - can specify tag to assign
+  'VIP'?: boolean | string; // Optional - VIP status
 }
 
 /**
@@ -195,6 +211,106 @@ export function parseTagsExcel(file: File): Promise<InsertTag[]> {
         
         resolve(tags);
       } catch (error) {
+        reject(new Error(`Error parsing Excel file: ${error.message}`));
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Error reading file'));
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+export function parseUsersExcel(file: File): Promise<InsertUser[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData: ExcelUser[] = XLSX.utils.sheet_to_json(worksheet);
+        
+        const users: InsertUser[] = jsonData.map((row, index) => {
+          const rowNum = index + 2; // +2 because index is 0-based and we have a header row
+          
+          // Validate required fields
+          if (!row['First Name'] || !row['Surname'] || !row['Date of Birth'] || !row['Gender'] || 
+              !row['Phone'] || !row['Email'] || !row['NIN'] || !row['State of Origin'] || !row['LGA']) {
+            throw new Error(`Missing required fields in row ${rowNum}. Required: First Name, Surname, Date of Birth, Gender, Phone, Email, NIN, State of Origin, LGA`);
+          }
+          
+          // Validate NIN format (11 digits)
+          const nin = row['NIN'].toString().trim();
+          if (!/^\d{11}$/.test(nin)) {
+            throw new Error(`Invalid NIN in row ${rowNum}. NIN must be exactly 11 digits. Got: "${nin}"`);
+          }
+          
+          // Validate phone (minimum 10 digits)
+          const phone = row['Phone'].toString().trim();
+          if (phone.length < 10) {
+            throw new Error(`Invalid phone number in row ${rowNum}. Phone must be at least 10 digits. Got: "${phone}"`);
+          }
+          
+          // Validate email format
+          const email = row['Email'].toString().trim();
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            throw new Error(`Invalid email in row ${rowNum}. Got: "${email}"`);
+          }
+          
+          // Normalize gender
+          const normalizedGender = row['Gender'].toString().toLowerCase();
+          if (normalizedGender !== 'male' && normalizedGender !== 'female') {
+            throw new Error(`Invalid gender "${row['Gender']}" in row ${rowNum}. Must be "Male", "Female", "male", or "female"`);
+          }
+          const gender = normalizedGender === 'male' ? 'Male' : 'Female';
+          
+          // Parse date of birth
+          let dob: string;
+          if (row['Date of Birth'] instanceof Date) {
+            dob = row['Date of Birth'].toISOString().split('T')[0];
+          } else {
+            // Try to parse the date string
+            const dateStr = row['Date of Birth'].toString().trim();
+            const parsedDate = new Date(dateStr);
+            if (isNaN(parsedDate.getTime())) {
+              throw new Error(`Invalid date of birth in row ${rowNum}. Got: "${dateStr}"`);
+            }
+            dob = parsedDate.toISOString().split('T')[0];
+          }
+          
+          // Parse VIP status
+          let isVip = false;
+          if (row['VIP']) {
+            const vipValue = row['VIP'].toString().toLowerCase().trim();
+            isVip = vipValue === 'true' || vipValue === 'yes' || vipValue === '1' || vipValue === 'vip';
+          }
+          
+          return {
+            firstName: row['First Name'].toString().trim(),
+            middleName: row['Middle Name'] ? row['Middle Name'].toString().trim() : undefined,
+            surname: row['Surname'].toString().trim(),
+            dob: dob,
+            gender: gender as 'Male' | 'Female',
+            phone: phone,
+            email: email,
+            nin: nin,
+            stateOfOrigin: row['State of Origin'].toString().trim(),
+            lga: row['LGA'].toString().trim(),
+            isVip: isVip,
+            // Optional room/tag selection - store as roomNumber/tagNumber strings, will be converted to IDs during upload
+            selectedRoomNumber: row['Room Number'] ? row['Room Number'].toString().trim() : undefined,
+            selectedTagNumber: row['Tag Number'] ? row['Tag Number'].toString().trim() : undefined,
+          };
+        });
+        
+        resolve(users);
+      } catch (error: any) {
         reject(new Error(`Error parsing Excel file: ${error.message}`));
       }
     };

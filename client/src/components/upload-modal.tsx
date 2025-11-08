@@ -5,14 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CloudUpload, X, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { parseRoomsExcel, parseTagsExcel } from "@/lib/excel-utils";
+import { parseRoomsExcel, parseTagsExcel, parseUsersExcel } from "@/lib/excel-utils";
 import { collection, addDoc, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { UploadProgressPopup } from "./upload-progress-popup";
+import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
 
 interface UploadModalProps {
-  type: 'rooms' | 'tags';
+  type: 'rooms' | 'tags' | 'users';
   onClose: () => void;
 }
 
@@ -81,8 +82,10 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       // Parse Excel file
       if (type === 'rooms') {
         items = await parseRoomsExcel(file);
-      } else {
+      } else if (type === 'tags') {
         items = await parseTagsExcel(file);
+      } else {
+        items = await parseUsersExcel(file);
       }
       
       setTotalCount(items.length);
@@ -106,7 +109,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
             exists: !existingRoomSnapshot.empty,
             existingData: existingRoomSnapshot.empty ? null : existingRoomSnapshot.docs[0].data()
           };
-        } else {
+        } else if (type === 'tags') {
           const existingTagQuery = query(
             collection(db, "tags"),
             where("tagNumber", "==", item.tagNumber)
@@ -117,6 +120,19 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
             item,
             exists: !existingTagSnapshot.empty,
             existingData: existingTagSnapshot.empty ? null : existingTagSnapshot.docs[0].data()
+          };
+        } else {
+          // For users, check by email (unique identifier)
+          const existingUserQuery = query(
+            collection(db, "users"),
+            where("email", "==", item.email)
+          );
+          const existingUserSnapshot = await getDocs(existingUserQuery);
+          
+          return {
+            item,
+            exists: !existingUserSnapshot.empty,
+            existingData: existingUserSnapshot.empty ? null : existingUserSnapshot.docs[0].data()
           };
         }
       });
@@ -144,37 +160,92 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       setUploadProgress(50);
       setUploadStatus('uploading');
       
-      // Upload in batches for better progress tracking
-      const batchSize = 10;
-      const batches = [];
-      for (let i = 0; i < items.length; i += batchSize) {
-        batches.push(items.slice(i, i + batchSize));
-      }
-      
-      for (let i = 0; i < batches.length; i++) {
-        const batch = writeBatch(db);
-        const currentBatch = batches[i];
+      if (type === 'users') {
+        // For users, we need to process them individually to assign rooms/tags
+        for (let i = 0; i < items.length; i++) {
+          const userData = items[i];
+          
+          // Look up room ID if room number is specified
+          if (userData.selectedRoomNumber) {
+            const roomQuery = query(
+              collection(db, "rooms"),
+              where("roomNumber", "==", userData.selectedRoomNumber)
+            );
+            const roomSnapshot = await getDocs(roomQuery);
+            if (!roomSnapshot.empty) {
+              userData.selectedRoomId = roomSnapshot.docs[0].id;
+            } else {
+              console.warn(`Room number ${userData.selectedRoomNumber} not found for user ${userData.email}`);
+              delete userData.selectedRoomNumber;
+            }
+          }
+          
+          // Look up tag ID if tag number is specified
+          if (userData.selectedTagNumber) {
+            const tagQuery = query(
+              collection(db, "tags"),
+              where("tagNumber", "==", userData.selectedTagNumber)
+            );
+            const tagSnapshot = await getDocs(tagQuery);
+            if (!tagSnapshot.empty) {
+              userData.selectedTagId = tagSnapshot.docs[0].id;
+            } else {
+              console.warn(`Tag number ${userData.selectedTagNumber} not found for user ${userData.email}`);
+              delete userData.selectedTagNumber;
+            }
+          }
+          
+          // Remove the temporary fields
+          delete userData.selectedRoomNumber;
+          delete userData.selectedTagNumber;
+          
+          // Use flexibleAssignRoomAndTag to create user with room/tag assignment
+          try {
+            const result = await flexibleAssignRoomAndTag(userData);
+            if (result.success) {
+              setUploadedCount(i + 1);
+              const progress = 50 + ((i + 1) / items.length) * 40;
+              setUploadProgress(progress);
+            } else {
+              console.error(`Failed to register user ${userData.email}:`, result.error);
+            }
+          } catch (error: any) {
+            console.error(`Error registering user ${userData.email}:`, error);
+          }
+        }
+      } else {
+        // For rooms and tags, upload in batches
+        const batchSize = 10;
+        const batches = [];
+        for (let i = 0; i < items.length; i += batchSize) {
+          batches.push(items.slice(i, i + batchSize));
+        }
         
-        currentBatch.forEach(item => {
-          const itemRef = doc(collection(db, type));
-          batch.set(itemRef, item);
-        });
-        
-        await batch.commit();
-        
-        const uploaded = (i + 1) * batchSize;
-        const actualUploaded = Math.min(uploaded, items.length);
-        setUploadedCount(actualUploaded);
-        
-        const progress = 50 + ((i + 1) / batches.length) * 40;
-        setUploadProgress(progress);
+        for (let i = 0; i < batches.length; i++) {
+          const batch = writeBatch(db);
+          const currentBatch = batches[i];
+          
+          currentBatch.forEach(item => {
+            const itemRef = doc(collection(db, type));
+            batch.set(itemRef, item);
+          });
+          
+          await batch.commit();
+          
+          const uploaded = (i + 1) * batchSize;
+          const actualUploaded = Math.min(uploaded, items.length);
+          setUploadedCount(actualUploaded);
+          
+          const progress = 50 + ((i + 1) / batches.length) * 40;
+          setUploadProgress(progress);
+        }
       }
       
       setUploadProgress(100);
       setUploadStatus('success');
       
       toast({
-        title: `${type === 'rooms' ? 'Rooms' : 'Tags'} Uploaded Successfully`,
+        title: `${type === 'rooms' ? 'Rooms' : type === 'tags' ? 'Tags' : 'Users'} Uploaded Successfully`,
         description: `${items.length} new ${type} added to the system. ${existingItemsCount} ${type} were already existing.`,
       });
       
@@ -236,14 +307,14 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-primary" />
-              Upload {type === 'rooms' ? 'Rooms' : 'Tags'} Excel File
+              Upload {type === 'rooms' ? 'Rooms' : type === 'tags' ? 'Tags' : 'Users'} Excel File
             </DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-upload">
               <X className="h-4 w-4" />
             </Button>
           </div>
           <p id="upload-description" className="text-sm text-muted-foreground">
-            Upload an Excel file to add {type === 'rooms' ? 'room data' : 'tag data'} to the system. 
+            Upload an Excel file to add {type === 'rooms' ? 'room data' : type === 'tags' ? 'tag data' : 'user registrations'} to the system. 
             The file will be validated and processed automatically.
           </p>
         </DialogHeader>
@@ -274,7 +345,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
               </div>
               <div className="space-y-3">
                 <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {type === 'rooms' ? '🏠 Upload Room Data' : '🏷️ Upload Tag Data'}
+                  {type === 'rooms' ? '🏠 Upload Room Data' : type === 'tags' ? '🏷️ Upload Tag Data' : '👥 Upload User Data'}
                 </h3>
                 <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
                   Drop your Excel file here
@@ -404,7 +475,35 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
                 <FileSpreadsheet className="h-5 w-5" />
                 📋 Expected Format
               </h4>
-              {type === 'rooms' ? (
+              {type === 'users' ? (
+                <div className="text-sm space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">
+                      <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">📊 Required Columns:</p>
+                      <p className="text-gray-700 dark:text-gray-300 font-mono text-xs">
+                        First Name, Surname, Date of Birth, Gender, Phone, Email, NIN, State of Origin, LGA
+                      </p>
+                    </div>
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">
+                      <p className="font-bold text-amber-700 dark:text-amber-300 mb-2">📊 Optional Columns:</p>
+                      <p className="text-gray-700 dark:text-gray-300 font-mono text-xs">
+                        Middle Name, Room Number, Tag Number, VIP
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                      <strong>💡 Note:</strong> All required fields must be filled. NIN must be exactly 11 digits. Phone must be at least 10 digits.
+                    </p>
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                      <strong>🏠 Room/Tag Assignment:</strong> If Room Number or Tag Number is specified, the system will try to assign them. Otherwise, rooms and tags will be assigned automatically or marked as pending.
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      <strong>👑 VIP Status:</strong> Set VIP column to "true", "yes", "1", or "vip" for VIP users (they get priority for VIP rooms).
+                    </p>
+                  </div>
+                </div>
+              ) : type === 'rooms' ? (
                 <div className="text-sm space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">

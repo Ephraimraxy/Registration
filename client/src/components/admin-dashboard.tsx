@@ -447,6 +447,7 @@ export function AdminDashboard() {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <ThemeToggle />
               <Link href="/" className="w-full sm:w-auto">
                 <Button
                   variant="default"

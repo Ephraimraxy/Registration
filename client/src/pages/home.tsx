@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Building, UserPlus } from "lucide-react";
+import { Building } from "lucide-react";
 import { RegistrationForm } from "@/components/registration-form";
 import { RegistrationSuccessPage } from "@/components/registration-success-page";
 import type { User } from "@shared/schema";
@@ -33,21 +32,10 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
-                  <span className="hidden sm:inline">🎓 REGISTRATION MANAGEMENT SYSTEM</span>
-                  <span className="sm:hidden">🎓 REGISTRATION</span>
+                  <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM: REGISTRATION MANAGEMENT SYSTEM</span>
+                  <span className="sm:hidden">ISAC ACCREDITATION</span>
                 </h1>
               </div>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-center sm:justify-end">
-              <Button
-                variant="default"
-                data-testid="button-show-registration"
-                className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105 w-full sm:w-auto"
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">👤 Register User</span>
-                <span className="sm:hidden">Register</span>
-              </Button>
             </div>
           </div>
         </div>

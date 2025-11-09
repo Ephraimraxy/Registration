@@ -213,43 +213,44 @@ export function setupRoomTagListeners(
               .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
             onRoomsUpdate(rooms);
           },
-        (error: any) => {
-          // If index error, fallback to fetching all rooms and filtering client-side
-          if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
-            console.warn("Firestore index not found for real-time listener. Using fallback.");
-            const allRoomsQuery = query(collection(db, "rooms"));
-            const fallbackUnsubscribe = onSnapshot(allRoomsQuery, (snapshot) => {
-              const rooms = snapshot.docs
-                .map(doc => {
-                  const data = doc.data();
-                  return {
-                    id: doc.id,
-                    roomNumber: data.roomNumber,
-                    wing: data.wing,
-                    gender: data.gender as "Male" | "Female",
-                    availableBeds: data.availableBeds,
-                    totalBeds: data.totalBeds,
-                  };
-                })
-                .filter(room => {
-                  if (room.availableBeds <= 0) return false;
-                  if (room.gender === gender) return true;
-                  // Include female rooms for males if cross-gender is allowed
-                  if (allowCrossGender && gender === "Male" && room.gender === "Female") return true;
-                  return false;
-                })
-                .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-              onRoomsUpdate(rooms);
-            });
-            unsubscribes.push(fallbackUnsubscribe);
-          } else {
-            console.error("Error in rooms listener:", error);
-            onRoomsUpdate([]);
+          (error: any) => {
+            // If index error, fallback to fetching all rooms and filtering client-side
+            if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
+              console.warn("Firestore index not found for real-time listener. Using fallback.");
+              const allRoomsQuery = query(collection(db, "rooms"));
+              const fallbackUnsubscribe = onSnapshot(allRoomsQuery, (snapshot) => {
+                const rooms = snapshot.docs
+                  .map(doc => {
+                    const data = doc.data();
+                    return {
+                      id: doc.id,
+                      roomNumber: data.roomNumber,
+                      wing: data.wing,
+                      gender: data.gender as "Male" | "Female",
+                      availableBeds: data.availableBeds,
+                      totalBeds: data.totalBeds,
+                    };
+                  })
+                  .filter(room => {
+                    if (room.availableBeds <= 0) return false;
+                    if (room.gender === gender) return true;
+                    // Include female rooms for males if cross-gender is allowed
+                    if (allowCrossGender && gender === "Male" && room.gender === "Female") return true;
+                    return false;
+                  })
+                  .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+                onRoomsUpdate(rooms);
+              });
+              unsubscribes.push(fallbackUnsubscribe);
+            } else {
+              console.error("Error in rooms listener:", error);
+              onRoomsUpdate([]);
+            }
           }
-        }
-      );
-      
-      unsubscribes.push(roomsUnsubscribe);
+        );
+        
+        unsubscribes.push(roomsUnsubscribe);
+      }
     } catch (error: any) {
       // Fallback if query creation fails
       if (error?.code === "failed-precondition" || error?.message?.includes("index")) {

@@ -46,11 +46,8 @@ interface UserData {
   specialization?: string;
 }
 
-interface UserProfileProps {
-  token?: string;
-}
-
-export function UserProfile({ token: propToken }: UserProfileProps) {
+export function UserProfile() {
+  const params = useParams();
   const [location] = useLocation();
   const [step, setStep] = useState<"welcome" | "tag-input" | "profile">("welcome");
   const [tagNumber, setTagNumber] = useState("");
@@ -77,14 +74,9 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
     },
   });
 
-  // Extract token from URL or props
+  // Extract token from URL params
   useEffect(() => {
-    let token = propToken;
-    
-    if (!token) {
-      const pathParts = location.split("/");
-      token = pathParts[pathParts.length - 1];
-    }
+    const token = params?.token;
     
     if (token && token.startsWith("token_")) {
       validateToken(token);
@@ -92,7 +84,7 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
       setTokenValid(false);
       setIsValidatingToken(false);
     }
-  }, [location, propToken]);
+  }, [params]);
 
   // Load specializations
   useEffect(() => {

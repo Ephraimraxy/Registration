@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare, ClipboardCheck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -726,6 +726,15 @@ export function AdminDashboard() {
             <Button onClick={() => handleUpload('users')} data-testid="button-upload-users" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <Upload className="mr-2 h-4 w-4" />
               Upload Users (Excel)
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: "Attendance Feature",
+                description: "Attendance management feature coming soon!",
+              });
+            }} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              📋 Attendance
             </Button>
             <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
               {/* Export Format Selection */}

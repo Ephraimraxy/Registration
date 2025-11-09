@@ -34,6 +34,7 @@ interface AccessLink {
 export function LinkGenerator() {
   const [generatedToken, setGeneratedToken] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [links, setLinks] = useState<AccessLink[]>([]);
@@ -119,26 +120,46 @@ export function LinkGenerator() {
     }
   };
 
-  const copyToClipboard = (token: string) => {
+  const copyToClipboard = (token: string, linkId?: string) => {
     const baseUrl = window.location.origin;
     const fullLink = `${baseUrl}/profile/${token}`;
     navigator.clipboard.writeText(fullLink);
-    setCopied(true);
+    if (linkId) {
+      setCopiedLinkId(linkId);
+    } else {
+      setCopied(true);
+    }
     toast({
       title: "Copied!",
       description: "Full link copied to clipboard",
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      if (linkId) {
+        setCopiedLinkId(null);
+      } else {
+        setCopied(false);
+      }
+    }, 2000);
   };
 
-  const copyTokenOnly = (token: string) => {
+  const copyTokenOnly = (token: string, linkId?: string) => {
     navigator.clipboard.writeText(token);
-    setCopied(true);
+    if (linkId) {
+      setCopiedLinkId(linkId);
+    } else {
+      setCopied(true);
+    }
     toast({
       title: "Copied!",
       description: "Token copied to clipboard",
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      if (linkId) {
+        setCopiedLinkId(null);
+      } else {
+        setCopied(false);
+      }
+    }, 2000);
   };
 
   const toggleLinkStatus = async (linkId: string, currentStatus: boolean) => {
@@ -401,9 +422,37 @@ export function LinkGenerator() {
                               <Badge variant="destructive">Expired</Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Created: {formatDate(link.createdAt)}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <p className="text-xs text-muted-foreground">
+                              Created: {formatDate(link.createdAt)}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyTokenOnly(link.token, link.id)}
+                              className="h-6 px-2 text-xs"
+                              title="Copy token only"
+                            >
+                              {copiedLinkId === link.id ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(link.token, link.id)}
+                              className="h-6 px-2 text-xs"
+                              title="Copy full link"
+                            >
+                              {copiedLinkId === link.id ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             Expires: {formatDate(link.expiresAt)}
                           </p>

@@ -451,17 +451,17 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
 
             {/* Success Message */}
             {uploadStatus === 'success' && (
-              <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 dark:border-green-700 dark:from-green-950/30 dark:to-emerald-950/30 shadow-lg">
+              <Card className="border-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-3 text-green-700 dark:text-green-300">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600">
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="p-2 rounded-full bg-white/20 backdrop-blur-sm">
                       <CheckCircle className="h-6 w-6 text-white" />
                     </div>
                     <div>
                       <span className="font-bold text-lg">
                         🎉 Successfully uploaded {totalCount} {type}!
                       </span>
-                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                      <p className="text-sm text-white/90 mt-1">
                         ✨ This window will close automatically in a few seconds.
                       </p>
                     </div>
@@ -472,15 +472,15 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
 
             {/* Error Message */}
             {uploadStatus === 'error' && (
-              <Card className="border-2 border-red-300 bg-gradient-to-r from-red-50 to-pink-50 dark:border-red-700 dark:from-red-950/30 dark:to-pink-950/30 shadow-lg">
+              <Card className="border-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
                 <CardContent className="p-6">
-                  <div className="flex items-center gap-3 text-red-700 dark:text-red-300">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600">
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="p-2 rounded-full bg-white/20 backdrop-blur-sm">
                       <AlertCircle className="h-6 w-6 text-white" />
                     </div>
                     <div>
                       <span className="font-bold text-lg">❌ Upload failed</span>
-                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-sm text-white/90 mt-1">
                         🔍 Please check the file format and try again.
                       </p>
                     </div>

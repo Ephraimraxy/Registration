@@ -217,17 +217,17 @@ export function UploadProgressPopup({
 
         {/* Success Message */}
         {status === 'success' && (
-          <Card className="mb-6 border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 dark:border-green-700 dark:from-green-950/30 dark:to-emerald-950/30">
+          <Card className="mb-6 border-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4 text-green-700 dark:text-green-300">
-                <div className="p-3 rounded-full bg-gradient-to-br from-green-500 to-emerald-600">
+              <div className="flex items-center gap-4 text-white">
+                <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm">
                   <CheckCircle className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-xl">
                     🎉 Upload Successful!
                   </h3>
-                  <p className="text-green-600 dark:text-green-400 mt-1">
+                  <p className="text-white/90 mt-1">
                     ✨ Successfully uploaded {totalCount} {type} to the database
                   </p>
                 </div>
@@ -238,17 +238,17 @@ export function UploadProgressPopup({
 
         {/* Error Message */}
         {status === 'error' && error && (
-          <Card className="mb-6 border-2 border-red-300 bg-gradient-to-r from-red-50 to-pink-50 dark:border-red-700 dark:from-red-950/30 dark:to-pink-950/30">
+          <Card className="mb-6 border-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4 text-red-700 dark:text-red-300">
-                <div className="p-3 rounded-full bg-gradient-to-br from-red-500 to-pink-600">
+              <div className="flex items-center gap-4 text-white">
+                <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm">
                   <AlertCircle className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-xl">
                     ❌ Upload Failed
                   </h3>
-                  <p className="text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-white/90 mt-1">
                     🔍 {error}
                   </p>
                 </div>

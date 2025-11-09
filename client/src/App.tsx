@@ -24,7 +24,7 @@ function Router() {
       <Route path="/rooms-tags" component={() => <RoomsTagsDetailPage onBack={() => window.history.back()} />} />
       <Route path="/user-details" component={() => <UserDetailsPage user={JSON.parse(localStorage.getItem('viewingUser') || '{}')} onBack={() => window.history.back()} />} />
       <Route path="/profile/:token">
-        {(params) => <UserProfile token={params?.token} />}
+        {({ params }) => <UserProfile token={params?.token} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

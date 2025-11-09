@@ -193,12 +193,12 @@ export function SpecializationManagement() {
               {specializations.map((spec) => (
                 <div
                   key={spec.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 border rounded-lg hover:bg-accent transition-colors"
                 >
-                  <div>
-                    <p className="font-medium">{spec.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm sm:text-base break-words">{spec.name}</p>
                     {spec.description && (
-                      <p className="text-sm text-muted-foreground">{spec.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground break-words">{spec.description}</p>
                     )}
                   </div>
                   <Button
@@ -208,6 +208,7 @@ export function SpecializationManagement() {
                       setDeletingId(spec.id);
                       setDeleteDialogOpen(true);
                     }}
+                    className="self-end sm:self-auto shrink-0"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

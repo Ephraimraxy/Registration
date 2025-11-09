@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, collection, doc, setDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { initializeFirestore, collection, doc, setDoc, getDocs, query, where, Timestamp, addDoc } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import { initializeSampleData } from "./db-init";
@@ -49,6 +49,9 @@ export const initializeDatabase = async () => {
     // Create initial admin document
     await createInitialAdminDocument();
     
+    // Initialize default specializations
+    await initializeDefaultSpecializations();
+    
     // Note: Sample data is not created by default
     // Use initializeSampleData(true) to create sample data if needed
     
@@ -89,6 +92,52 @@ const createInitialAdminDocument = async () => {
     }
   } catch (error) {
     console.error("Error creating initial admin document:", error);
+  }
+};
+
+const initializeDefaultSpecializations = async () => {
+  try {
+    const specializationsRef = collection(db, "specializations");
+    const existingSnapshot = await getDocs(specializationsRef);
+    
+    // Only add if collection is empty
+    if (existingSnapshot.empty) {
+      const defaultSpecializations = [
+        {
+          name: "Field Crop Production (Rice, maize Mechanization, etc)",
+          description: "Crop production including rice, maize, and mechanization",
+          createdAt: Timestamp.now(),
+        },
+        {
+          name: "Vegetable Production in Green house Hydroponics and Open Field",
+          description: "Vegetable production using greenhouse, hydroponics, and open field methods",
+          createdAt: Timestamp.now(),
+        },
+        {
+          name: "Catfish Farming",
+          description: "Aquaculture focusing on catfish production",
+          createdAt: Timestamp.now(),
+        },
+        {
+          name: "Poultry Production (Broilers, Layers, Ruminant and Chicken Processing)",
+          description: "Poultry production including broilers, layers, ruminant, and chicken processing",
+          createdAt: Timestamp.now(),
+        },
+        {
+          name: "Value Addition",
+          description: "Value addition and processing of agricultural products",
+          createdAt: Timestamp.now(),
+        },
+      ];
+      
+      for (const spec of defaultSpecializations) {
+        await addDoc(specializationsRef, spec);
+      }
+      
+      console.log("Default specializations initialized");
+    }
+  } catch (error) {
+    console.error("Error initializing default specializations:", error);
   }
 };
 

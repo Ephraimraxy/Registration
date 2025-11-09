@@ -720,16 +720,16 @@ export function AdminDashboard() {
       <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-3">
-              <Trash className="h-6 w-6" />
-              🗑️ Bulk Delete Operations
+            <CardTitle className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-2 sm:gap-3">
+              <Trash className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-base sm:text-xl">🗑️ Bulk Delete Operations</span>
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={refreshData}
-                className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
+                className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Refresh Data
@@ -738,7 +738,7 @@ export function AdminDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowClearDataDialog(true)}
-                className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
+                className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
               >
                 <Trash className="h-4 w-4 mr-2" />
                 Clear All Data
@@ -883,9 +883,9 @@ export function AdminDashboard() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Filters & Search</CardTitle>
-            <Button variant="outline" size="sm" onClick={resetFilters} data-testid="button-reset-filters">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <CardTitle className="text-lg sm:text-xl">Filters & Search</CardTitle>
+            <Button variant="outline" size="sm" onClick={resetFilters} data-testid="button-reset-filters" className="w-full sm:w-auto">
               Reset Filters
             </Button>
           </div>
@@ -1005,8 +1005,8 @@ export function AdminDashboard() {
           </div>
           
           {(searchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-muted-foreground">Active filters:</span>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <span className="text-xs sm:text-sm text-muted-foreground w-full sm:w-auto">Active filters:</span>
               {searchQuery && (
                 <Badge key="search" variant="secondary" className="text-xs">
                   Search: {searchQuery}

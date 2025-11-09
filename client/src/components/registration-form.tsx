@@ -460,7 +460,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your first name" {...field} data-testid="input-first-name" />
+                            <Input className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0" {...field} data-testid="input-first-name" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -474,7 +474,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Surname</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your surname" {...field} data-testid="input-surname" />
+                            <Input className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0" {...field} data-testid="input-surname" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -488,7 +488,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Middle Name (Optional)</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your middle name" {...field} data-testid="input-middle-name" />
+                            <Input className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0" {...field} data-testid="input-middle-name" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -502,7 +502,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Date of Birth</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} data-testid="input-dob" />
+                            <Input type="date" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 [&::-webkit-calendar-picker-indicator]:invert" {...field} data-testid="input-dob" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -522,8 +522,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             setSelectedRoomId("");
                           }} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger data-testid="select-gender" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder="Select gender" className="text-gray-900 dark:text-gray-100" />
+                              <SelectTrigger data-testid="select-gender" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue className="text-white" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
@@ -571,7 +571,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem>
                             <FormLabel>Phone Number</FormLabel>
                             <FormControl>
-                              <Input placeholder="08012345678" {...field} data-testid="input-phone" />
+                              <Input className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0" {...field} data-testid="input-phone" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -585,7 +585,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem className="md:col-span-2">
                             <FormLabel>Email Address (Optional)</FormLabel>
                             <FormControl>
-                              <Input type="email" placeholder="your.email@example.com (optional)" {...field} data-testid="input-email" />
+                              <Input type="email" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0" {...field} data-testid="input-email" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -600,8 +600,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="12345678901 (optional)" 
                                 maxLength={11}
+                                className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white placeholder:text-white/70 border-0"
                                 {...field} 
                                 data-testid="input-nin"
                                 onChange={(e) => {
@@ -639,8 +639,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               form.setValue("lga", ""); // Reset LGA when state changes
                             }} value={field.value}>
                               <FormControl>
-                                <SelectTrigger data-testid="select-state" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                  <SelectValue placeholder="Select state" className="text-gray-900 dark:text-gray-100" />
+                                <SelectTrigger data-testid="select-state" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 focus:ring-0 focus:ring-offset-0">
+                                  <SelectValue className="text-white" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
@@ -685,8 +685,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <FormLabel>Local Government Area</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
                               <FormControl>
-                                <SelectTrigger data-testid="select-lga" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                  <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-gray-900 dark:text-gray-100" />
+                                <SelectTrigger data-testid="select-lga" className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 focus:ring-0 focus:ring-offset-0">
+                                  <SelectValue className="text-white" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
@@ -775,17 +775,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               onValueChange={(value) => setSelectedRoomId(value || "")}
                               disabled={isLoadingRooms || availableRooms.length === 0}
                             >
-                              <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue 
-                                  placeholder={
-                                    isLoadingRooms 
-                                      ? "Loading rooms..." 
-                                      : availableRooms.length === 0 
-                                        ? "No rooms available (will be assigned automatically)" 
-                                        : "Select a room or leave empty for auto-assignment"
-                                  } 
-                                  className="text-gray-900 dark:text-gray-100" 
-                                />
+                              <SelectTrigger className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue className="text-white" />
                               </SelectTrigger>
                               <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                                 {availableRooms.map((room, index) => (
@@ -838,17 +829,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             onValueChange={(value) => setSelectedTagId(value || "")}
                             disabled={isLoadingTags || availableTags.length === 0}
                           >
-                            <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                              <SelectValue 
-                                placeholder={
-                                  isLoadingTags 
-                                    ? "Loading tags..." 
-                                    : availableTags.length === 0 
-                                      ? "No tags available (will be assigned automatically)" 
-                                      : "Select a tag or leave empty for auto-assignment"
-                                } 
-                                className="text-gray-900 dark:text-gray-100" 
-                              />
+                            <SelectTrigger className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border-0 focus:ring-0 focus:ring-offset-0">
+                              <SelectValue className="text-white" />
                             </SelectTrigger>
                             <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
                               {availableTags.map((tag, index) => (

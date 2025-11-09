@@ -555,6 +555,69 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 </div>
                 )}
 
+                {/* Step 2: Contact Information */}
+                {currentStep === 2 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <Phone className="mr-2 h-5 w-5 text-primary" />
+                      Contact Information
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="08012345678" {...field} data-testid="input-phone" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>Email Address (Optional)</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="your.email@example.com (optional)" {...field} data-testid="input-email" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="nin"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="12345678901 (optional)" 
+                                maxLength={11}
+                                {...field} 
+                                data-testid="input-nin"
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  field.onChange(value);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Step 3: Location Information */}
                 {currentStep === 3 && (
                   <div>

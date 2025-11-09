@@ -261,7 +261,22 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         cleanup();
       }
     };
-  }, [selectedGender]);
+  }, [selectedGender, allowCrossGender]);
+
+  // Load cross-gender setting
+  useEffect(() => {
+    const settingsRef = doc(db, "settings", "roomSettings");
+    const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setAllowCrossGender(data.allowCrossGender || false);
+      }
+    }, (error) => {
+      console.error("Error loading room settings:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Check availability when gender changes
   const checkAvailability = async (gender: string) => {

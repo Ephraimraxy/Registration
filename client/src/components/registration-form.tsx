@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag } from "lucide-react";
+import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag, ChevronRight, ChevronLeft, Phone, Mail, FileText, CheckCircle2 } from "lucide-react";
 import { validateRegistrationData } from "@/lib/firebase";
 import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
 import { validateAvailability } from "@/lib/availability-utils";
@@ -69,6 +69,8 @@ interface RegistrationFormProps {
 }
 
 export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 5;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationProgress, setRegistrationProgress] = useState(0);
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'validating' | 'checking-availability' | 'finding-room' | 'finding-tag' | 'creating-user' | 'success' | 'error'>('idle');
@@ -224,6 +226,56 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     }
   };
 
+  // Step validation functions
+  const validateStep = async (step: number): Promise<boolean> => {
+    const values = form.getValues();
+    
+    switch (step) {
+      case 1: // Personal Information
+        await form.trigger(['firstName', 'surname', 'dob', 'gender']);
+        return !form.formState.errors.firstName && 
+               !form.formState.errors.surname && 
+               !form.formState.errors.dob && 
+               !form.formState.errors.gender;
+      case 2: // Contact Information
+        await form.trigger(['phone']);
+        if (values.email) await form.trigger(['email']);
+        if (values.nin) await form.trigger(['nin']);
+        return !form.formState.errors.phone && 
+               !form.formState.errors.email && 
+               !form.formState.errors.nin;
+      case 3: // Location Information
+        await form.trigger(['stateOfOrigin', 'lga']);
+        return !form.formState.errors.stateOfOrigin && 
+               !form.formState.errors.lga;
+      case 4: // Room & Tag Selection (optional, always valid)
+        return true;
+      case 5: // Review (always valid)
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const handleNext = async () => {
+    const isValid = await validateStep(currentStep);
+    if (isValid && currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields before proceeding.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const onSubmit = async (data: InsertUser) => {
     setIsSubmitting(true);
     setRegistrationStatus('validating');
@@ -323,25 +375,84 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     }
   };
 
+  const formValues = form.watch();
+  const stepTitles = [
+    "Personal Information",
+    "Contact Information", 
+    "Location Information",
+    "Room & Tag Selection",
+    "Review & Submit"
+  ];
+  const stepIcons = [User, Phone, MapPin, Building, CheckCircle2];
+
   return (
     <div className="max-w-3xl mx-auto">
       <Card className="shadow-lg">
         <CardContent className="p-4 sm:p-6 md:p-8">
           <div className="text-center mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">TRAINEE ACCREDITATION</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Complete your registration and get your room assignment</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Complete your registration in {totalSteps} steps</p>
+          </div>
+
+          {/* Step Progress Indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+                const StepIcon = stepIcons[step - 1];
+                const isActive = step === currentStep;
+                const isCompleted = step < currentStep;
+                return (
+                  <div key={step} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          isActive
+                            ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg scale-110"
+                            : isCompleted
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-6 w-6" />
+                        ) : (
+                          <StepIcon className="h-6 w-6" />
+                        )}
+                      </div>
+                      <p className={`text-xs mt-2 text-center font-medium ${
+                        isActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
+                      }`}>
+                        Step {step}
+                      </p>
+                      <p className={`text-xs text-center ${
+                        isActive ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-muted-foreground"
+                      }`}>
+                        {stepTitles[step - 1]}
+                      </p>
+                    </div>
+                    {step < totalSteps && (
+                      <div className={`flex-1 h-1 mx-2 transition-all duration-300 ${
+                        step < currentStep ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+                      }`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
           </div>
 
           <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="form-registration">
-                {/* Personal Information Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                    <User className="mr-2 h-5 w-5 text-primary" />
-                    Personal Information
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {/* Step 1: Personal Information */}
+                {currentStep === 1 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <User className="mr-2 h-5 w-5 text-primary" />
+                      Personal Information
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="firstName"
@@ -439,363 +550,363 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
-                    
-                    {/* Room Selection - appears after gender */}
-                    {selectedGender && (
-                      <div className="md:col-span-2">
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            Select Room (Optional)
-                          </FormLabel>
-                        <Select 
-                          value={selectedRoomId || undefined} 
-                          onValueChange={(value) => setSelectedRoomId(value || "")}
-                          disabled={isLoadingRooms || availableRooms.length === 0}
-                        >
-                          <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                            <SelectValue 
-                              placeholder={
-                                isLoadingRooms 
-                                  ? "Loading rooms..." 
-                                  : availableRooms.length === 0 
-                                    ? "No rooms available (will be assigned automatically)" 
-                                    : "Select a room or leave empty for auto-assignment"
-                              } 
-                              className="text-gray-900 dark:text-gray-100" 
-                            />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                              {availableRooms.map((room, index) => (
-                                <SelectItem 
-                                  key={room.id} 
-                                  value={room.id}
-                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                    index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                                    index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
-                                    index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
-                                    'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
-                                  }`}
-                                >
-                                  <span className="flex items-center justify-between w-full text-gray-900 dark:text-gray-100">
-                                    <span className="flex items-center gap-2">
-                                      <span className={`w-3 h-3 rounded-full shadow-sm ${
-                                        index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                                        index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
-                                        index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
-                                        'bg-gradient-to-r from-blue-500 to-blue-600'
-                                      }`}></span>
-                                      <strong>{room.roomNumber}</strong> (Wing {room.wing})
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                      {room.availableBeds} bed{room.availableBeds !== 1 ? 's' : ''} available
-                                    </span>
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {availableRooms.length === 0 && !isLoadingRooms && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              💡 No rooms available. Room will be assigned automatically when available.
-                            </p>
-                          )}
-                        </FormItem>
-                      </div>
                     )}
-                    
-                    {/* Tag Selection */}
-                    <div className="md:col-span-2">
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Tag className="h-4 w-4" />
-                          Select Tag (Optional)
-                        </FormLabel>
-                        <Select 
-                          value={selectedTagId || undefined} 
-                          onValueChange={(value) => setSelectedTagId(value || "")}
-                          disabled={isLoadingTags || availableTags.length === 0}
-                        >
-                          <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                            <SelectValue 
-                              placeholder={
-                                isLoadingTags 
-                                  ? "Loading tags..." 
-                                  : availableTags.length === 0 
-                                    ? "No tags available (will be assigned automatically)" 
-                                    : "Select a tag or leave empty for auto-assignment"
-                              } 
-                              className="text-gray-900 dark:text-gray-100" 
-                            />
-                          </SelectTrigger>
-                        <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                            {availableTags.map((tag, index) => (
-                              <SelectItem 
-                                key={tag.id} 
-                                value={tag.id}
-                                className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                  index % 4 === 0 ? 'hover:bg-purple-50 dark:hover:bg-purple-900/30 focus:bg-purple-100 dark:focus:bg-purple-800/40' :
-                                  index % 4 === 1 ? 'hover:bg-pink-50 dark:hover:bg-pink-900/30 focus:bg-pink-100 dark:focus:bg-pink-800/40' :
-                                  index % 4 === 2 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
-                                  'hover:bg-orange-50 dark:hover:bg-orange-900/30 focus:bg-orange-100 dark:focus:bg-orange-800/40'
-                                }`}
-                              >
-                                <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                                  <span className={`w-3 h-3 rounded-full shadow-sm ${
-                                    index % 4 === 0 ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
-                                    index % 4 === 1 ? 'bg-gradient-to-r from-pink-500 to-pink-600' :
-                                    index % 4 === 2 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
-                                    'bg-gradient-to-r from-orange-500 to-orange-600'
-                                  }`}></span>
-                                  Tag {tag.tagNumber}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {availableTags.length === 0 && !isLoadingTags && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            💡 No tags available. Tag will be assigned automatically when available.
-                          </p>
-                        )}
-                      </FormItem>
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="08012345678" {...field} data-testid="input-phone" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Email Address (Optional)</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="your.email@example.com (optional)" {...field} data-testid="input-email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="nin"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="12345678901 (optional)" 
-                              maxLength={11}
-                              {...field} 
-                              data-testid="input-nin"
-                              onChange={(e) => {
-                                // Only allow digits
-                                const value = e.target.value.replace(/\D/g, '');
-                                field.onChange(value);
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
                 </div>
+                )}
 
-                {/* Location Information Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                    <MapPin className="mr-2 h-5 w-5 text-primary" />
-                    Location Information
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <FormField
-                      control={form.control}
-                      name="stateOfOrigin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State of Origin</FormLabel>
-                          <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedState(value);
-                            form.setValue("lga", ""); // Reset LGA when state changes
-                          }} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-state" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder="Select state" className="text-gray-900 dark:text-gray-100" />
+                {/* Step 3: Location Information */}
+                {currentStep === 3 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <MapPin className="mr-2 h-5 w-5 text-primary" />
+                      Location Information
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                      <FormField
+                        control={form.control}
+                        name="stateOfOrigin"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State of Origin</FormLabel>
+                            <Select onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedState(value);
+                              form.setValue("lga", ""); // Reset LGA when state changes
+                            }} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-state" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                  <SelectValue placeholder="Select state" className="text-gray-900 dark:text-gray-100" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                                {NIGERIAN_STATES.map((state, index) => (
+                                  <SelectItem 
+                                    key={state} 
+                                    value={state}
+                                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                      index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                      index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                      index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
+                                      index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
+                                      index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                                      'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                      <span className={`w-3 h-3 rounded-full shadow-sm ${
+                                        index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                        index % 6 === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                                        index % 6 === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-600' :
+                                        index % 6 === 3 ? 'bg-gradient-to-r from-orange-500 to-amber-600' :
+                                        index % 6 === 4 ? 'bg-gradient-to-r from-pink-500 to-rose-600' :
+                                        'bg-gradient-to-r from-indigo-500 to-blue-600'
+                                      }`}></span>
+                                      {state}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="lga"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Local Government Area</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-lga" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                  <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-gray-900 dark:text-gray-100" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                                {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
+                                  <SelectItem 
+                                    key={lga} 
+                                    value={lga}
+                                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                      index % 5 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                      index % 5 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                                      index % 5 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                                      index % 5 === 3 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                      'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                      <span className={`w-2 h-2 rounded-full shadow-sm ${
+                                        index % 5 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                                        index % 5 === 1 ? 'bg-gradient-to-r from-teal-500 to-teal-600' :
+                                        index % 5 === 2 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                                        index % 5 === 3 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                                        'bg-gradient-to-r from-blue-500 to-blue-600'
+                                      }`}></span>
+                                      {lga}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* VIP Status Checkbox */}
+                      <FormField
+                        control={form.control}
+                        name="isVip"
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value || false}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="checkbox-vip"
+                                  className="w-5 h-5 border-2 border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                                />
+                              </FormControl>
+                              <div className="space-y-1">
+                                <FormLabel className="text-purple-800 dark:text-purple-200 font-bold text-lg cursor-pointer">
+                                  👑 VIP Status
+                                </FormLabel>
+                                <p className="text-sm text-purple-600 dark:text-purple-300">
+                                  Check this if the person is a VIP and should be assigned to reserved rooms
+                                </p>
+                              </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 4: Room & Tag Selection */}
+                {currentStep === 4 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <Building className="mr-2 h-5 w-5 text-primary" />
+                      Room & Tag Selection
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      {/* Room Selection */}
+                      {selectedGender && (
+                        <div>
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Building className="h-4 w-4" />
+                              Select Room (Optional)
+                            </FormLabel>
+                            <Select 
+                              value={selectedRoomId || undefined} 
+                              onValueChange={(value) => setSelectedRoomId(value || "")}
+                              disabled={isLoadingRooms || availableRooms.length === 0}
+                            >
+                              <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                                <SelectValue 
+                                  placeholder={
+                                    isLoadingRooms 
+                                      ? "Loading rooms..." 
+                                      : availableRooms.length === 0 
+                                        ? "No rooms available (will be assigned automatically)" 
+                                        : "Select a room or leave empty for auto-assignment"
+                                  } 
+                                  className="text-gray-900 dark:text-gray-100" 
+                                />
                               </SelectTrigger>
-                            </FormControl>
+                              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                                {availableRooms.map((room, index) => (
+                                  <SelectItem 
+                                    key={room.id} 
+                                    value={room.id}
+                                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                      index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                      index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                                      index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                                      'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
+                                    }`}
+                                  >
+                                    <span className="flex items-center justify-between w-full text-gray-900 dark:text-gray-100">
+                                      <span className="flex items-center gap-2">
+                                        <span className={`w-3 h-3 rounded-full shadow-sm ${
+                                          index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                                          index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                                          index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                                          'bg-gradient-to-r from-blue-500 to-blue-600'
+                                        }`}></span>
+                                        <strong>{room.roomNumber}</strong> (Wing {room.wing})
+                                      </span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                        {room.availableBeds} bed{room.availableBeds !== 1 ? 's' : ''} available
+                                      </span>
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {availableRooms.length === 0 && !isLoadingRooms && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                💡 No rooms available. Room will be assigned automatically when available.
+                              </p>
+                            )}
+                          </FormItem>
+                        </div>
+                      )}
+
+                      {/* Tag Selection */}
+                      <div>
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Tag className="h-4 w-4" />
+                            Select Tag (Optional)
+                          </FormLabel>
+                          <Select 
+                            value={selectedTagId || undefined} 
+                            onValueChange={(value) => setSelectedTagId(value || "")}
+                            disabled={isLoadingTags || availableTags.length === 0}
+                          >
+                            <SelectTrigger className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                              <SelectValue 
+                                placeholder={
+                                  isLoadingTags 
+                                    ? "Loading tags..." 
+                                    : availableTags.length === 0 
+                                      ? "No tags available (will be assigned automatically)" 
+                                      : "Select a tag or leave empty for auto-assignment"
+                                } 
+                                className="text-gray-900 dark:text-gray-100" 
+                              />
+                            </SelectTrigger>
                             <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                              {NIGERIAN_STATES.map((state, index) => (
+                              {availableTags.map((tag, index) => (
                                 <SelectItem 
-                                  key={state} 
-                                  value={state}
+                                  key={tag.id} 
+                                  value={tag.id}
                                   className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                    index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
-                                    index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                                    index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
-                                    index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
-                                    index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
-                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                                    index % 4 === 0 ? 'hover:bg-purple-50 dark:hover:bg-purple-900/30 focus:bg-purple-100 dark:focus:bg-purple-800/40' :
+                                    index % 4 === 1 ? 'hover:bg-pink-50 dark:hover:bg-pink-900/30 focus:bg-pink-100 dark:focus:bg-pink-800/40' :
+                                    index % 4 === 2 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                                    'hover:bg-orange-50 dark:hover:bg-orange-900/30 focus:bg-orange-100 dark:focus:bg-orange-800/40'
                                   }`}
                                 >
                                   <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                                     <span className={`w-3 h-3 rounded-full shadow-sm ${
-                                      index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                                      index % 6 === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
-                                      index % 6 === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-600' :
-                                      index % 6 === 3 ? 'bg-gradient-to-r from-orange-500 to-amber-600' :
-                                      index % 6 === 4 ? 'bg-gradient-to-r from-pink-500 to-rose-600' :
-                                      'bg-gradient-to-r from-indigo-500 to-blue-600'
+                                      index % 4 === 0 ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
+                                      index % 4 === 1 ? 'bg-gradient-to-r from-pink-500 to-pink-600' :
+                                      index % 4 === 2 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
+                                      'bg-gradient-to-r from-orange-500 to-orange-600'
                                     }`}></span>
-                                    {state}
+                                    Tag {tag.tagNumber}
                                   </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          {availableTags.length === 0 && !isLoadingTags && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              💡 No tags available. Tag will be assigned automatically when available.
+                            </p>
+                          )}
                         </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="lga"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Local Government Area</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-lga" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder={selectedState ? "Select LGA" : "Select state first"} className="text-gray-900 dark:text-gray-100" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                              {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
-                                <SelectItem 
-                                  key={lga} 
-                                  value={lga}
-                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                    index % 5 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                                    index % 5 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
-                                    index % 5 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
-                                    index % 5 === 3 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
-                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                                    <span className={`w-2 h-2 rounded-full shadow-sm ${
-                                      index % 5 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                                      index % 5 === 1 ? 'bg-gradient-to-r from-teal-500 to-teal-600' :
-                                      index % 5 === 2 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
-                                      index % 5 === 3 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
-                                      'bg-gradient-to-r from-blue-500 to-blue-600'
-                                    }`}></span>
-                                    {lga}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {/* VIP Status Checkbox */}
-                    <FormField
-                      control={form.control}
-                      name="isVip"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value || false}
-                                onCheckedChange={field.onChange}
-                                data-testid="checkbox-vip"
-                                className="w-5 h-5 border-2 border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                              />
-                            </FormControl>
-                            <div className="space-y-1">
-                              <FormLabel className="text-purple-800 dark:text-purple-200 font-bold text-lg cursor-pointer">
-                                👑 VIP Status
-                              </FormLabel>
-                              <p className="text-sm text-purple-600 dark:text-purple-300">
-                                Check this if the person is a VIP and should be assigned to reserved rooms
-                              </p>
+                      </div>
+
+                      {/* Availability Status */}
+                      {availabilityStatus && (
+                        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                          <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
+                            📊 Availability Status
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                              <div>
+                                <div className="font-semibold text-gray-800 dark:text-gray-200">
+                                  {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '⏳ Rooms Pending'}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  {availabilityStatus.hasAvailableRooms 
+                                    ? `${availabilityStatus.availableRoomCount} beds available`
+                                    : 'Will be assigned when available'
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                              <div>
+                                <div className="font-semibold text-gray-800 dark:text-gray-200">
+                                  {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '⏳ Tags Pending'}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  {availabilityStatus.hasAvailableTags 
+                                    ? `${availabilityStatus.availableTagCount} tags available`
+                                    : 'Will be assigned when available'
+                                  }
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <FormMessage />
-                        </FormItem>
+                        </div>
                       )}
-                    />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Availability Status */}
-                {availabilityStatus && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
-                    <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
-                      📊 Availability Status
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                {/* Step 5: Review & Submit */}
+                {currentStep === 5 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                      <CheckCircle2 className="mr-2 h-5 w-5 text-primary" />
+                      Review & Submit
+                    </h3>
+                    
+                    <div className="space-y-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <div className="font-semibold text-gray-800 dark:text-gray-200">
-                            {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '⏳ Rooms Pending'}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {availabilityStatus.hasAvailableRooms 
-                              ? `${availabilityStatus.availableRoomCount} beds available`
-                              : 'Will be assigned when available'
-                            }
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">Personal Information</h4>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Name:</strong> {formValues.firstName} {formValues.middleName} {formValues.surname}</p>
+                            <p><strong>Date of Birth:</strong> {formValues.dob ? new Date(formValues.dob).toLocaleDateString() : 'N/A'}</p>
+                            <p><strong>Gender:</strong> {formValues.gender}</p>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                         <div>
-                          <div className="font-semibold text-gray-800 dark:text-gray-200">
-                            {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '⏳ Tags Pending'}
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">Contact Information</h4>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Phone:</strong> {formValues.phone || 'N/A'}</p>
+                            <p><strong>Email:</strong> {formValues.email || 'Not provided'}</p>
+                            <p><strong>NIN:</strong> {formValues.nin || 'Not provided'}</p>
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {availabilityStatus.hasAvailableTags 
-                              ? `${availabilityStatus.availableTagCount} tags available`
-                              : 'Will be assigned when available'
-                            }
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">Location</h4>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>State:</strong> {formValues.stateOfOrigin || 'N/A'}</p>
+                            <p><strong>LGA:</strong> {formValues.lga || 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-2">Assignments</h4>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Room:</strong> {selectedRoomId ? availableRooms.find(r => r.id === selectedRoomId)?.roomNumber || 'Auto-assign' : 'Auto-assign'}</p>
+                            <p><strong>Tag:</strong> {selectedTagId ? availableTags.find(t => t.id === selectedTagId)?.tagNumber || 'Auto-assign' : 'Auto-assign'}</p>
+                            <p><strong>VIP:</strong> {formValues.isVip ? 'Yes' : 'No'}</p>
                           </div>
                         </div>
                       </div>
                     </div>
-                    {(!availabilityStatus.hasAvailableRooms || !availabilityStatus.hasAvailableTags) && (
-                      <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                          💡 <strong>Flexible Registration:</strong> You can still register! Missing resources will be assigned automatically when they become available.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Progress Display */}
+                    {/* Progress Display */}
                 {isSubmitting && (
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-between">
@@ -825,26 +936,49 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                   </div>
                 )}
 
-                <div className="flex justify-center pt-4">
+                {/* Navigation Buttons */}
+                <div className="flex justify-between items-center pt-6 border-t">
                   <Button
-                    type="submit" 
-                    size="lg" 
-                    disabled={isSubmitting}
-                    className="px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                    data-testid="button-register"
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={currentStep === 1 || isSubmitting}
+                    className="flex items-center gap-2"
                   >
-                    {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Registering...
-                      </div>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-5 w-5" />
-                        SUBMIT
-                      </>
-                    )}
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
                   </Button>
+
+                  {currentStep < totalSteps ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit" 
+                      size="lg" 
+                      disabled={isSubmitting}
+                      className="px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      data-testid="button-register"
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Registering...
+                        </div>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-5 w-5" />
+                          SUBMIT
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </form>
           </Form>

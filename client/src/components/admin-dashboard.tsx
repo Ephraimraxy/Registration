@@ -368,7 +368,6 @@ export function AdminDashboard() {
       toast({
         title: "✅ Tags Deleted Successfully",
         description: `Successfully deleted ${deletedCount} available tags.`,
-        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
       });
 
       // Reset after success
@@ -446,7 +445,6 @@ export function AdminDashboard() {
       toast({
         title: "✅ Rooms Deleted Successfully",
         description: `Successfully deleted ${deletedCount} available rooms.`,
-        className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
       });
 
       // Reset after success
@@ -490,7 +488,6 @@ export function AdminDashboard() {
         toast({
           title: "✅ Database Cleared",
           description: "All data has been successfully cleared from the database.",
-          className: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/20 dark:text-green-400",
         });
         setShowClearDataDialog(false);
       } else {

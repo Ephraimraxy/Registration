@@ -315,7 +315,11 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         await form.trigger(['stateOfOrigin', 'lga']);
         return !form.formState.errors.stateOfOrigin && 
                !form.formState.errors.lga;
-      case 4: // Room & Tag Selection (optional, always valid)
+      case 4: // Room & Tag Selection (required)
+        // Check if room and tag are selected
+        if (!selectedRoomId || !selectedTagId) {
+          return false;
+        }
         return true;
       case 5: // Review (always valid)
         return true;
@@ -329,9 +333,19 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     if (isValid && currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
+      let errorMessage = "Please fill in all required fields before proceeding.";
+      if (currentStep === 4) {
+        if (!selectedRoomId && !selectedTagId) {
+          errorMessage = "Please select both a room and a tag before proceeding.";
+        } else if (!selectedRoomId) {
+          errorMessage = "Please select a room before proceeding.";
+        } else if (!selectedTagId) {
+          errorMessage = "Please select a tag before proceeding.";
+        }
+      }
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields before proceeding.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -529,13 +543,20 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Only allow submission via the submit button, not Enter key
-                  if (currentStep === totalSteps && !isSubmitting) {
-                    form.handleSubmit(onSubmit)(e);
-                  }
+                  e.stopPropagation();
+                  // Only allow submission when on step 5 and submit button is clicked
+                  // This prevents auto-submission on Enter key press
+                  return false;
                 }} 
                 className="space-y-6" 
                 data-testid="form-registration"
+                onKeyDown={(e) => {
+                  // Prevent form submission on Enter key
+                  if (e.key === 'Enter' && currentStep === totalSteps) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
               >
                 {/* Step 1: Personal Information */}
                 {currentStep === 1 && (
@@ -908,7 +929,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <FormControl>
                                 <SelectTrigger 
                                   data-testid="select-state" 
-                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                                 >
                                   <SelectValue className="text-gray-900 dark:text-white" />
                               </SelectTrigger>
@@ -957,7 +978,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <FormControl>
                                 <SelectTrigger 
                                   data-testid="select-lga" 
-                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                                 >
                                   <SelectValue className="text-gray-900 dark:text-white" />
                               </SelectTrigger>
@@ -1041,7 +1062,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
                               <Building className="h-4 w-4" />
-                              Select Room (Optional)
+                              Select Room *
                             </FormLabel>
                             <Select 
                               value={selectedRoomId || undefined} 
@@ -1049,7 +1070,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               disabled={isLoadingRooms || availableRooms.length === 0}
                             >
                               <SelectTrigger 
-                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                               >
                                 <SelectValue className="text-gray-900 dark:text-white" />
                               </SelectTrigger>
@@ -1084,8 +1105,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                               </SelectContent>
                             </Select>
                             {availableRooms.length === 0 && !isLoadingRooms && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                💡 No rooms available. Room will be assigned automatically when available.
+                              <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                                ⚠️ No rooms available. Please contact administrator or wait for rooms to be added.
+                              </p>
+                            )}
+                            {!selectedRoomId && availableRooms.length > 0 && (
+                              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                                * Room selection is required
                               </p>
                             )}
                           </FormItem>
@@ -1097,7 +1123,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
                             <Tag className="h-4 w-4" />
-                            Select Tag (Optional)
+                            Select Tag *
                           </FormLabel>
                           <Select 
                             value={selectedTagId || undefined} 
@@ -1105,7 +1131,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             disabled={isLoadingTags || availableTags.length === 0}
                           >
                             <SelectTrigger 
-                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                             >
                               <SelectValue className="text-gray-900 dark:text-white" />
                             </SelectTrigger>
@@ -1135,8 +1161,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             </SelectContent>
                           </Select>
                           {availableTags.length === 0 && !isLoadingTags && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              💡 No tags available. Tag will be assigned automatically when available.
+                            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                              ⚠️ No tags available. Please contact administrator or wait for tags to be added.
+                            </p>
+                          )}
+                          {!selectedTagId && availableTags.length > 0 && (
+                            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                              * Tag selection is required
                             </p>
                           )}
                         </FormItem>
@@ -1284,9 +1315,16 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     </Button>
                   ) : (
                   <Button 
-                    type="submit" 
+                    type="button" 
                     size="lg" 
                     disabled={isSubmitting}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (currentStep === totalSteps && !isSubmitting) {
+                        form.handleSubmit(onSubmit)(e);
+                      }
+                    }}
                       className="w-full sm:w-auto px-4 sm:px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 order-1 sm:order-2"
                     data-testid="button-register"
                   >

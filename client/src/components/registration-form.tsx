@@ -905,8 +905,10 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
 
-                    {/* Progress Display */}
+                {/* Progress Display */}
                 {isSubmitting && (
                   <div className="space-y-4 py-6">
                     <div className="flex items-center justify-between">

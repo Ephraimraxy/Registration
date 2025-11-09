@@ -496,6 +496,9 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                   Tag
                 </th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Specialization
+                </th>
+                <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   NIN
                 </th>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -586,6 +589,15 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
                         <span className="text-yellow-600 dark:text-yellow-400 text-xs">
                           {user.tagStatus === 'pending' ? '⏳ Pending' : 'Not assigned'}
                         </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-testid={`text-specialization-${user.id}`}>
+                      {user.specialization ? (
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                          {user.specialization}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">Not selected</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-mono" data-testid={`text-nin-${user.id}`}>

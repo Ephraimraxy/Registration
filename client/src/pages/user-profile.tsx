@@ -50,7 +50,7 @@ interface UserProfileProps {
   token?: string;
 }
 
-export function UserProfile({ token: propToken }: UserProfileProps = {}) {
+export function UserProfile({ token: propToken }: UserProfileProps) {
   const [location] = useLocation();
   const [step, setStep] = useState<"welcome" | "tag-input" | "profile">("welcome");
   const [tagNumber, setTagNumber] = useState("");

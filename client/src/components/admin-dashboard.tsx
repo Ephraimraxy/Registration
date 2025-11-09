@@ -710,6 +710,12 @@ export function AdminDashboard() {
         </CardContent>
       </Card>
 
+      {/* Specialization Management & Link Generator */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <SpecializationManagement />
+        <LinkGenerator />
+      </div>
+
       {/* Bulk Delete Controls */}
       <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
         <CardHeader>

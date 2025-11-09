@@ -165,14 +165,30 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       
       // Filter out existing items and show summary
       const newItems = duplicateResults.filter(result => !result.exists).map(result => result.item);
-      existingItemsCount = duplicateResults.filter(result => result.exists).length;
+      const existingItems = duplicateResults.filter(result => result.exists);
+      existingItemsCount = existingItems.length;
       
       console.log(`Found ${existingItemsCount} existing ${type}, ${newItems.length} new ${type} to upload`);
+      
+      // Show detailed summary if there are existing items
+      if (existingItemsCount > 0 && newItems.length > 0) {
+        const existingNumbers = existingItems.map(result => {
+          if (type === 'rooms') return (result.item as any).roomNumber;
+          if (type === 'tags') return (result.item as any).tagNumber;
+          return 'N/A';
+        }).join(', ');
+        
+        toast({
+          title: "Partial Upload",
+          description: `Found ${existingItemsCount} existing ${type} (skipped). Will upload ${newItems.length} new ${type}.`,
+          variant: "default",
+        });
+      }
       
       if (newItems.length === 0) {
         toast({
           title: "No New Items to Upload",
-          description: `All ${type} in this file already exist in the system.`,
+          description: `All ${type} in this file already exist in the system. Existing items are not updated - only new ones are added.`,
           variant: "destructive",
         });
         return;

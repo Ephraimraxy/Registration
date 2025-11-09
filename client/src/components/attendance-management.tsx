@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardCheck, Copy, Check, Loader2, BookOpen } from "lucide-react";
+import { ClipboardCheck, Copy, Check, Loader2, BookOpen, Link2, Download, ChevronDown } from "lucide-react";
 import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import * as XLSX from 'xlsx';
 
 interface AttendanceRecord {
   id: string;
@@ -38,8 +41,10 @@ export function AttendanceManagement() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [showLinksDialog, setShowLinksDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -133,16 +138,95 @@ export function AttendanceManagement() {
     }
   };
 
-  const copyLink = (token: string) => {
+  const copyLink = (token: string, lectureId?: string) => {
     const baseUrl = window.location.origin;
     const fullLink = `${baseUrl}/attendance/${token}`;
     navigator.clipboard.writeText(fullLink);
-    setCopied(true);
+    if (lectureId) {
+      setCopiedLinkId(lectureId);
+    } else {
+      setCopied(true);
+    }
     toast({
       title: "Copied!",
       description: "Attendance link copied to clipboard",
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      if (lectureId) {
+        setCopiedLinkId(null);
+      } else {
+        setCopied(false);
+      }
+    }, 2000);
+  };
+
+  const exportAttendanceToExcel = (selectedLectureTitle?: string) => {
+    try {
+      let recordsToExport = attendanceRecords;
+      
+      if (selectedLectureTitle && selectedLectureTitle !== "All Courses") {
+        recordsToExport = attendanceRecords.filter(r => r.lectureTitle === selectedLectureTitle);
+      }
+
+      if (recordsToExport.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No attendance records to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare data for Excel
+      const excelData = recordsToExport.map(record => {
+        const timestamp = record.timestamp?.toDate ? record.timestamp.toDate() : new Date(record.timestamp);
+        return {
+          'Lecture Title': record.lectureTitle,
+          'Tag Number': record.tagNumber,
+          'Status': record.status === 'present' ? 'Present' : 'Absent',
+          'Date': timestamp.toLocaleDateString(),
+          'Time': timestamp.toLocaleTimeString(),
+          'Timestamp': timestamp.toISOString(),
+        };
+      });
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 20 }, // Lecture Title
+        { wch: 15 }, // Tag Number
+        { wch: 12 }, // Status
+        { wch: 15 }, // Date
+        { wch: 15 }, // Time
+        { wch: 25 }, // Timestamp
+      ];
+      ws['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Attendance Records');
+
+      // Generate filename
+      const filename = selectedLectureTitle && selectedLectureTitle !== "All Courses"
+        ? `Attendance_${selectedLectureTitle}_${new Date().toISOString().split('T')[0]}.xlsx`
+        : `Attendance_All_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Write and download
+      XLSX.writeFile(wb, filename);
+
+      toast({
+        title: "Export Successful",
+        description: `Attendance records exported to ${filename}`,
+      });
+    } catch (error: any) {
+      console.error("Error exporting attendance:", error);
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export attendance records",
+        variant: "destructive",
+      });
+    }
   };
 
   // Group attendance records by lecture title
@@ -232,9 +316,109 @@ export function AttendanceManagement() {
           )}
         </div>
 
+        {/* Links Button */}
+        <div className="flex justify-end">
+          <Dialog open={showLinksDialog} onOpenChange={setShowLinksDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white">
+                <Link2 className="mr-2 h-4 w-4" />
+                Links
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-gray-900 dark:text-gray-900">Generated Lecture Links</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 mt-4">
+                {lectures.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No lecture links generated yet.</p>
+                ) : (
+                  lectures.map((lecture) => {
+                    const baseUrl = window.location.origin;
+                    const fullLink = `${baseUrl}/attendance/${lecture.token}`;
+                    const isCopied = copiedLinkId === lecture.id;
+                    const createdAt = lecture.createdAt?.toDate ? lecture.createdAt.toDate() : new Date(lecture.createdAt);
+                    
+                    return (
+                      <div
+                        key={lecture.id}
+                        className="p-4 border rounded-lg bg-white dark:bg-gray-100 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-900">{lecture.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Created: {createdAt.toLocaleString()}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyLink(lecture.token, lecture.id)}
+                            className="shrink-0"
+                          >
+                            {isCopied ? (
+                              <>
+                                <Check className="h-4 w-4 mr-1 text-green-600" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-4 w-4 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono bg-gray-100 dark:bg-gray-200 px-2 py-1 rounded break-all flex-1">
+                            {fullLink}
+                          </code>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
         {/* Attendance Records Table */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Live Attendance Records</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Live Attendance Records</h3>
+            {lectureTitles.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
+                  <DropdownMenuItem 
+                    onClick={() => exportAttendanceToExcel("All Courses")}
+                    className="cursor-pointer"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export All Courses
+                  </DropdownMenuItem>
+                  {lectureTitles.map((title) => (
+                    <DropdownMenuItem
+                      key={title}
+                      onClick={() => exportAttendanceToExcel(title)}
+                      className="cursor-pointer"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export {title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
           
           {lectureTitles.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No attendance records yet.</p>

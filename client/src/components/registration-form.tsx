@@ -11,10 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag, ChevronRight, ChevronLeft, Phone, Mail, FileText, CheckCircle2, Pen } from "lucide-react";
-import { validateRegistrationData } from "@/lib/firebase";
+import { validateRegistrationData, db } from "@/lib/firebase";
 import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
 import { validateAvailability } from "@/lib/availability-utils";
 import { fetchAvailableRooms, fetchAvailableTags, setupRoomTagListeners, type AvailableRoom, type AvailableTag } from "@/lib/room-tag-fetcher";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -189,7 +190,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     
     // Fetch rooms and tags with error handling
     Promise.all([
-      fetchAvailableRooms(selectedGender as "Male" | "Female").catch(err => {
+      fetchAvailableRooms(selectedGender as "Male" | "Female", allowCrossGender).catch(err => {
         console.error("Error fetching rooms:", err);
         return [];
       }),
@@ -245,7 +246,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
             }
             return prev;
           });
-        }
+        },
+        allowCrossGender
       );
     } catch (error) {
       console.error("Error setting up room/tag listeners:", error);
@@ -1094,7 +1096,26 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                           index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
                                           'bg-gradient-to-r from-blue-500 to-blue-600'
                                         }`}></span>
-                                        <strong>{room.roomNumber}</strong> (Wing {room.wing})
+                                        <strong>
+                                          {(() => {
+                                            // Check if roomNumber already includes wing (range format like "A204", "RA1")
+                                            // vs standard format where roomNumber is just "204" and wing is separate "A"
+                                            const roomNumStr = room.roomNumber.toString();
+                                            const wingStr = room.wing.toString();
+                                            
+                                            // If roomNumber starts with the wing prefix, it's range format
+                                            if (roomNumStr.toUpperCase().startsWith(wingStr.toUpperCase())) {
+                                              return roomNumStr; // Display as "A204", "RA1", etc.
+                                            }
+                                            // Otherwise, it's standard format
+                                            return `${roomNumStr} (Wing ${wingStr})`; // Display as "204 (Wing A)"
+                                          })()}
+                                        </strong>
+                                        {room.gender !== selectedGender && allowCrossGender && (
+                                          <span className="text-xs text-purple-600 dark:text-purple-400 ml-1">
+                                            ({room.gender === "Female" ? "Female Room" : "Male Room"})
+                                          </span>
+                                        )}
                                       </span>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                                         {room.availableBeds} bed{room.availableBeds !== 1 ? 's' : ''} available

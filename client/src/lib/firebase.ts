@@ -45,7 +45,8 @@ export const initializeDatabase = async () => {
       ensureCollectionExists("specializations"),
       ensureCollectionExists("accessLinks"),
       ensureCollectionExists("lectures"),
-      ensureCollectionExists("attendance")
+      ensureCollectionExists("attendance"),
+      ensureCollectionExists("settings")
     ]);
     
     // Create initial admin document

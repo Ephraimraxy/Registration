@@ -22,6 +22,7 @@ import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { SpecializationManagement } from "./specialization-management";
 import { LinkGenerator } from "./link-generator";
 import { AttendanceManagement } from "./attendance-management";
+import { RoomSettings } from "./room-settings";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { clearAllData } from "@/lib/db-init";
@@ -801,6 +802,9 @@ export function AdminDashboard() {
         <SpecializationManagement />
         <LinkGenerator />
       </div>
+
+      {/* Room Settings */}
+      <RoomSettings />
 
       {/* Attendance Management */}
       <AttendanceManagement />

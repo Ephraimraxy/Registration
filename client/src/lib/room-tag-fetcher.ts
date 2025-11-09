@@ -18,10 +18,13 @@ export interface AvailableTag {
 
 /**
  * Fetches available rooms filtered by gender
+ * If allowCrossGender is true and gender is Male, also includes Female rooms
  */
-export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<AvailableRoom[]> {
+export async function fetchAvailableRooms(gender: "Male" | "Female", allowCrossGender: boolean = false): Promise<AvailableRoom[]> {
   try {
-    // Try the composite query first (requires index)
+    let rooms: AvailableRoom[] = [];
+    
+    // Fetch rooms for the selected gender
     const roomsQuery = query(
       collection(db, "rooms"),
       where("gender", "==", gender),
@@ -29,9 +32,28 @@ export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<Av
     );
     
     const snapshot = await getDocs(roomsQuery);
+    rooms = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        roomNumber: data.roomNumber,
+        wing: data.wing,
+        gender: data.gender as "Male" | "Female",
+        availableBeds: data.availableBeds,
+        totalBeds: data.totalBeds,
+      };
+    });
     
-    return snapshot.docs
-      .map(doc => {
+    // If allowCrossGender is true and gender is Male, also fetch Female rooms
+    if (allowCrossGender && gender === "Male") {
+      const femaleRoomsQuery = query(
+        collection(db, "rooms"),
+        where("gender", "==", "Female"),
+        where("availableBeds", ">", 0)
+      );
+      
+      const femaleSnapshot = await getDocs(femaleRoomsQuery);
+      const femaleRooms = femaleSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -41,11 +63,14 @@ export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<Av
           availableBeds: data.availableBeds,
           totalBeds: data.totalBeds,
         };
-      })
-      .sort((a, b) => {
-        // Sort by room number for consistency
-        return a.roomNumber.localeCompare(b.roomNumber);
       });
+      rooms = [...rooms, ...femaleRooms];
+    }
+    
+    return rooms.sort((a, b) => {
+      // Sort by room number for consistency
+      return a.roomNumber.localeCompare(b.roomNumber);
+    });
   } catch (error: any) {
     // If index error, fallback to fetching all rooms and filtering client-side
     if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
@@ -55,7 +80,7 @@ export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<Av
         const allRoomsQuery = query(collection(db, "rooms"));
         const snapshot = await getDocs(allRoomsQuery);
         
-        return snapshot.docs
+        let rooms = snapshot.docs
           .map(doc => {
             const data = doc.data();
             return {
@@ -67,10 +92,18 @@ export async function fetchAvailableRooms(gender: "Male" | "Female"): Promise<Av
               totalBeds: data.totalBeds,
             };
           })
-          .filter(room => room.gender === gender && room.availableBeds > 0)
+          .filter(room => {
+            if (room.availableBeds <= 0) return false;
+            if (room.gender === gender) return true;
+            // Include female rooms for males if cross-gender is allowed
+            if (allowCrossGender && gender === "Male" && room.gender === "Female") return true;
+            return false;
+          })
           .sort((a, b) => {
             return a.roomNumber.localeCompare(b.roomNumber);
           });
+        
+        return rooms;
       } catch (fallbackError) {
         console.error("Error in fallback room fetch:", fallbackError);
         return [];
@@ -115,25 +148,30 @@ export async function fetchAvailableTags(): Promise<AvailableTag[]> {
 
 /**
  * Sets up real-time listeners for available rooms and tags
+ * If allowCrossGender is true and gender is Male, also includes Female rooms
  */
 export function setupRoomTagListeners(
   gender: "Male" | "Female" | null,
   onRoomsUpdate: (rooms: AvailableRoom[]) => void,
-  onTagsUpdate: (tags: AvailableTag[]) => void
+  onTagsUpdate: (tags: AvailableTag[]) => void,
+  allowCrossGender: boolean = false
 ): () => void {
   const unsubscribes: Unsubscribe[] = [];
 
   if (gender) {
     try {
+      // Set up listener for primary gender
       const roomsQuery = query(
         collection(db, "rooms"),
         where("gender", "==", gender),
         where("availableBeds", ">", 0)
       );
       
-      const roomsUnsubscribe = onSnapshot(
-        roomsQuery,
-        (snapshot) => {
+      // Use fallback approach if cross-gender is needed (simpler and more reliable)
+      if (allowCrossGender && gender === "Male") {
+        // Use fallback to get all rooms and filter
+        const allRoomsQuery = query(collection(db, "rooms"));
+        const fallbackUnsubscribe = onSnapshot(allRoomsQuery, (snapshot) => {
           const rooms = snapshot.docs
             .map(doc => {
               const data = doc.data();
@@ -146,9 +184,35 @@ export function setupRoomTagListeners(
                 totalBeds: data.totalBeds,
               };
             })
+            .filter(room => {
+              if (room.availableBeds <= 0) return false;
+              // Include both Male and Female rooms for Male users when cross-gender is allowed
+              return room.gender === "Male" || room.gender === "Female";
+            })
             .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
           onRoomsUpdate(rooms);
-        },
+        });
+        unsubscribes.push(fallbackUnsubscribe);
+      } else {
+        // Normal query for single gender
+        const roomsUnsubscribe = onSnapshot(
+          roomsQuery,
+          (snapshot) => {
+            const rooms = snapshot.docs
+              .map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  roomNumber: data.roomNumber,
+                  wing: data.wing,
+                  gender: data.gender as "Male" | "Female",
+                  availableBeds: data.availableBeds,
+                  totalBeds: data.totalBeds,
+                };
+              })
+              .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+            onRoomsUpdate(rooms);
+          },
         (error: any) => {
           // If index error, fallback to fetching all rooms and filtering client-side
           if (error?.code === "failed-precondition" || error?.message?.includes("index")) {
@@ -167,7 +231,13 @@ export function setupRoomTagListeners(
                     totalBeds: data.totalBeds,
                   };
                 })
-                .filter(room => room.gender === gender && room.availableBeds > 0)
+                .filter(room => {
+                  if (room.availableBeds <= 0) return false;
+                  if (room.gender === gender) return true;
+                  // Include female rooms for males if cross-gender is allowed
+                  if (allowCrossGender && gender === "Male" && room.gender === "Female") return true;
+                  return false;
+                })
                 .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
               onRoomsUpdate(rooms);
             });
@@ -198,7 +268,13 @@ export function setupRoomTagListeners(
                 totalBeds: data.totalBeds,
               };
             })
-            .filter(room => room.gender === gender && room.availableBeds > 0)
+            .filter(room => {
+              if (room.availableBeds <= 0) return false;
+              if (room.gender === gender) return true;
+              // Include female rooms for males if cross-gender is allowed
+              if (allowCrossGender && gender === "Male" && room.gender === "Female") return true;
+              return false;
+            })
             .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
           onRoomsUpdate(rooms);
         });

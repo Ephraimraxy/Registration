@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -288,25 +289,19 @@ export function AdminDashboard() {
     setShowUploadModal(true);
   };
 
-  const handleExport = () => {
-    if (exportType === 'custom') {
-      setShowCustomExportDialog(true);
-      return;
-    }
-    
+  const handleFullExport = () => {
     try {
       if (exportFormat === 'excel') {
-        exportUsersToExcel(users, exportType, exportType === 'custom' ? selectedColumns : undefined);
+        exportUsersToExcel(users, 'full');
         toast({
           title: "Export Successful",
-          description: `Students data has been exported to Excel (${exportType} format) successfully!`,
+          description: `Students data has been exported to Excel (full format) successfully!`,
         });
       } else {
-        // Export as PDF - generate single PDF with all users in table format
-        exportUsersToPDF(users, exportType);
+        exportUsersToPDF(users, 'full');
         toast({
           title: "Export Successful",
-          description: `PDF report generated for ${users.length} students (${exportType} format) successfully!`,
+          description: `PDF report generated for ${users.length} students (full format) successfully!`,
         });
       }
     } catch (error: any) {
@@ -316,6 +311,10 @@ export function AdminDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleCustomExportClick = () => {
+    setShowCustomExportDialog(true);
   };
 
   const handleCustomExport = () => {
@@ -750,10 +749,25 @@ export function AdminDashboard() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="secondary" onClick={handleExport} data-testid="button-export-users">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Users
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" data-testid="button-export-users">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Users
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
+                    <DropdownMenuItem onClick={handleFullExport} className="cursor-pointer">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Full Export (All Columns)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCustomExportClick} className="cursor-pointer">
+                      <CheckSquare className="mr-2 h-4 w-4" />
+                      Custom Export (Select Columns)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               {/* Export Type Tabs */}

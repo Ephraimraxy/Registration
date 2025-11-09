@@ -550,7 +550,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormMessage />
                         </FormItem>
                       )}
-                    )}
+                    />
                   </div>
                 </div>
                 )}

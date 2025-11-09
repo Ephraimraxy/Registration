@@ -132,11 +132,11 @@ export function DefaultStateSettings() {
               >
                 <SelectTrigger 
                   id="state-select"
-                  className="w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  className="w-full bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 dark:from-blue-600/20 dark:via-indigo-600/20 dark:to-purple-600/20 text-gray-900 dark:text-gray-100 border-0 focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300"
                 >
                   <SelectValue placeholder="Choose a state..." />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
                   {NIGERIAN_STATES.map((state) => (
                     <SelectItem key={state} value={state}>
                       {state}

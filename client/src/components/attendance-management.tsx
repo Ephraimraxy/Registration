@@ -460,15 +460,15 @@ export function AttendanceManagement() {
                             const timestamp = record.timestamp?.toDate ? record.timestamp.toDate() : new Date(record.timestamp);
                             return (
                               <TableRow key={record.id}>
-                                <TableCell className="font-mono font-semibold">
+                                <TableCell className="px-3 sm:px-4 py-2 sm:py-3 font-mono font-semibold text-xs sm:text-sm">
                                   {record.tagNumber}
                                 </TableCell>
-                                <TableCell>
-                                  <Badge className={record.status === "present" ? "bg-green-500" : "bg-red-500"}>
+                                <TableCell className="px-3 sm:px-4 py-2 sm:py-3">
+                                  <Badge className={`text-xs sm:text-sm ${record.status === "present" ? "bg-green-500" : "bg-red-500"}`}>
                                     {record.status === "present" ? "Present" : "Absent"}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
+                                <TableCell className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-muted-foreground">
                                   {timestamp.toLocaleString()}
                                 </TableCell>
                               </TableRow>

@@ -473,7 +473,7 @@ export function StudentTable({ users, onEdit, onViewDetails }: StudentTableProps
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[1000px] sm:min-w-[800px]">
             <thead className="bg-muted">
               <tr>
                 <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">

@@ -270,51 +270,6 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
-}
-
-/* Floating label styles */
-.floating-label {
-  position: relative;
-}
-
-.floating-label input,
-.floating-label select {
-  width: 100%;
-  padding: 1rem 0.75rem 0.5rem 0.75rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: calc(var(--radius) - 2px);
-  background-color: hsl(var(--background));
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.floating-label label {
-  position: absolute;
-  left: 0.75rem;
-  top: 1rem;
-  color: hsl(var(--muted-foreground));
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  pointer-events: none;
-  background-color: hsl(var(--background));
-  padding: 0 0.25rem;
-}
-
-.floating-label input:focus,
-.floating-label select:focus {
-  outline: none;
-  border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
-}
-
-.floating-label input:focus + label,
-.floating-label input:not(:placeholder-shown) + label,
-  .floating-label select:focus + label,
-  .floating-label select:not([value=""]) + label {
-    top: -0.5rem;
-    font-size: 0.75rem;
-    color: hsl(var(--ring));
-  }
 
   /* Slow pulse animation for form fields */
   @keyframes slow-pulse {
@@ -355,4 +310,48 @@
     white-space: nowrap;
     animation: typing 2s steps(20, end), blink-cursor 0.75s step-end infinite;
   }
+}
+
+/* Floating label styles */
+.floating-label {
+  position: relative;
+}
+
+.floating-label input,
+.floating-label select {
+  width: 100%;
+  padding: 1rem 0.75rem 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  background-color: hsl(var(--background));
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.floating-label label {
+  position: absolute;
+  left: 0.75rem;
+  top: 1rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  background-color: hsl(var(--background));
+  padding: 0 0.25rem;
+}
+
+.floating-label input:focus,
+.floating-label select:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label,
+.floating-label select:focus + label,
+.floating-label select:not([value=""]) + label {
+  top: -0.5rem;
+  font-size: 0.75rem;
+  color: hsl(var(--ring));
 }

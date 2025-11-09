@@ -30,7 +30,8 @@ export function AttendancePage({ token }: { token: string }) {
 
   useEffect(() => {
     loadLectureAndUsers();
-    setupAttendanceListener();
+    const unsubscribe = setupAttendanceListener();
+    return unsubscribe;
   }, [token]);
 
   const loadLectureAndUsers = async () => {
@@ -89,6 +90,8 @@ export function AttendancePage({ token }: { token: string }) {
   };
 
   const setupAttendanceListener = () => {
+    let unsubscribe: (() => void) | null = null;
+    
     // Get lecture ID first, then listen for attendance records
     const loadAndListen = async () => {
       try {
@@ -105,7 +108,7 @@ export function AttendancePage({ token }: { token: string }) {
           where("lectureId", "==", lectureId)
         );
         
-        const unsubscribe = onSnapshot(attendanceQuery, (snapshot) => {
+        unsubscribe = onSnapshot(attendanceQuery, (snapshot) => {
           const records: Record<string, AttendanceRecord> = {};
           snapshot.docs.forEach(doc => {
             const data = doc.data() as AttendanceRecord;
@@ -116,15 +119,18 @@ export function AttendancePage({ token }: { token: string }) {
           });
           setAttendanceRecords(records);
         });
-
-        return unsubscribe;
       } catch (error) {
         console.error("Error setting up attendance listener:", error);
-        return () => {};
       }
     };
 
-    return loadAndListen();
+    loadAndListen();
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   };
 
   const markAttendance = async (tagNumber: string, status: "present" | "absent") => {

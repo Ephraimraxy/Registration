@@ -23,6 +23,7 @@ import { SpecializationManagement } from "./specialization-management";
 import { LinkGenerator } from "./link-generator";
 import { AttendanceManagement } from "./attendance-management";
 import { RoomSettings } from "./room-settings";
+import { DefaultStateSettings } from "./default-state-settings";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { clearAllData } from "@/lib/db-init";
@@ -803,8 +804,11 @@ export function AdminDashboard() {
         <LinkGenerator />
       </div>
 
-      {/* Room Settings */}
-      <RoomSettings />
+      {/* Room Settings & Default State Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <RoomSettings />
+        <DefaultStateSettings />
+      </div>
 
       {/* Attendance Management */}
       <AttendanceManagement />

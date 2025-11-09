@@ -89,6 +89,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [allowCrossGender, setAllowCrossGender] = useState(false);
+  const [defaultState, setDefaultState] = useState<{ state: string; isActive: boolean } | null>(null);
   const { toast } = useToast();
   
   // Field animation states
@@ -274,6 +275,30 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       }
     }, (error) => {
       console.error("Error loading room settings:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Load default state setting
+  useEffect(() => {
+    const settingsRef = doc(db, "settings", "defaultStateSettings");
+    const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.isActive && data.defaultState) {
+          setDefaultState({ state: data.defaultState, isActive: true });
+          // Auto-set the state in the form
+          form.setValue("stateOfOrigin", data.defaultState);
+          setSelectedState(data.defaultState);
+        } else {
+          setDefaultState(null);
+        }
+      } else {
+        setDefaultState(null);
+      }
+    }, (error) => {
+      console.error("Error loading default state settings:", error);
     });
 
     return () => unsubscribe();
@@ -938,16 +963,26 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       name="stateOfOrigin"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>State of Origin</FormLabel>
-                          <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedState(value);
-                            form.setValue("lga", ""); // Reset LGA when state changes
-                          }} value={field.value}>
+                          <FormLabel>
+                            State of Origin
+                            {defaultState?.isActive && (
+                              <span className="ml-2 text-xs text-muted-foreground">(Pre-selected)</span>
+                            )}
+                          </FormLabel>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedState(value);
+                              form.setValue("lga", ""); // Reset LGA when state changes
+                            }} 
+                            value={field.value}
+                            disabled={defaultState?.isActive === true}
+                          >
                             <FormControl>
                                 <SelectTrigger 
                                   data-testid="select-state" 
-                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                  disabled={defaultState?.isActive === true}
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                   <SelectValue className="text-gray-900 dark:text-white" />
                               </SelectTrigger>

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CloudUpload, X, FileSpreadsheet, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { parseRoomsExcel, parseTagsExcel, parseUsersExcel } from "@/lib/excel-utils";
+import { parseRoomsExcel, parseRoomsExcelRangeFormat, parseTagsExcel, parseUsersExcel } from "@/lib/excel-utils";
 import { collection, addDoc, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [showProgressPopup, setShowProgressPopup] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
+  const [roomFormat, setRoomFormat] = useState<'standard' | 'range' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -46,23 +47,42 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
     setDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (type === 'rooms') {
+        setCurrentFile(file);
+        setRoomFormat(null); // Reset format to show selection
+      } else {
+        processFile(file);
+      }
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (type === 'rooms') {
+        setCurrentFile(file);
+        setRoomFormat(null); // Reset format to show selection
+      } else {
+        processFile(file);
+      }
     }
   };
 
-  const processFile = async (file: File) => {
+  const processFile = async (file: File, selectedFormat?: 'standard' | 'range') => {
     if (!file.name.match(/\.(xlsx|xls)$/)) {
       toast({
         title: "Invalid File Type",
         description: "Please upload an Excel file (.xlsx or .xls)",
         variant: "destructive",
       });
+      return;
+    }
+
+    // For rooms, check if format selection is needed
+    if (type === 'rooms' && !selectedFormat && roomFormat === null) {
+      setCurrentFile(file);
+      setRoomFormat(null); // Will trigger format selection dialog
       return;
     }
 
@@ -81,7 +101,12 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
       
       // Parse Excel file
       if (type === 'rooms') {
-        items = await parseRoomsExcel(file);
+        const format = selectedFormat || roomFormat || 'standard';
+        if (format === 'range') {
+          items = await parseRoomsExcelRangeFormat(file);
+        } else {
+          items = await parseRoomsExcel(file);
+        }
       } else if (type === 'tags') {
         items = await parseTagsExcel(file);
       } else {
@@ -507,15 +532,80 @@ export function UploadModal({ type, onClose }: UploadModalProps) {
           </div>
         )}
         
+        {/* Format Selection Dialog for Rooms */}
+        {type === 'rooms' && currentFile && roomFormat === null && !isUploading && (
+          <Card className="border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:border-purple-800 dark:from-purple-950/20 dark:to-pink-950/20">
+            <CardContent className="p-6">
+              <h4 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">
+                Select Room Import Format
+              </h4>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => {
+                    setRoomFormat('standard');
+                    processFile(currentFile, 'standard');
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                >
+                  Standard Format
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Columns: Wing, Room Number, Gender, Total Beds, Bed Numbers (optional)
+                </p>
+                <Button
+                  onClick={() => {
+                    setRoomFormat('range');
+                    processFile(currentFile, 'range');
+                  }}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white"
+                >
+                  Range Format
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Columns: Room Range (e.g., RA1-RA64), Gender, Beds Per Room, Wing (optional)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Format Instructions */}
-        {!isUploading && (
+        {!isUploading && roomFormat !== null && (
           <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 dark:border-amber-800 dark:from-amber-950/20 dark:to-yellow-950/20">
             <CardContent className="p-6">
               <h4 className="font-bold text-lg text-amber-800 dark:text-amber-200 mb-4 flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5" />
                 📋 Expected Format
               </h4>
-              {type === 'users' ? (
+              {type === 'rooms' ? (
+                <div className="text-sm space-y-4">
+                  {roomFormat === 'range' ? (
+                    <>
+                      <p className="font-semibold text-amber-800 dark:text-amber-200">Range Format:</p>
+                      <ul className="list-disc list-inside space-y-2 text-amber-700 dark:text-amber-300">
+                        <li><strong>Room Range</strong> (required): e.g., "RA1-RA64", "201-234", "D&D 120"</li>
+                        <li><strong>Gender</strong> (required): "Male" or "Female"</li>
+                        <li><strong>Beds Per Room</strong> (required): Number of beds in each room (e.g., 1, 3, 4)</li>
+                        <li><strong>Wing</strong> (optional): Wing designation (e.g., "RA", "RE", "A", "B")</li>
+                      </ul>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        💡 Ranges will be automatically expanded into individual rooms. Example: "RA1-RA64" with 1 bed per room creates 64 rooms (RA1, RA2, ..., RA64).
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-amber-800 dark:text-amber-200">Standard Format:</p>
+                      <ul className="list-disc list-inside space-y-2 text-amber-700 dark:text-amber-300">
+                        <li><strong>Wing</strong> (required): Room wing designation</li>
+                        <li><strong>Room Number</strong> (required): Room number</li>
+                        <li><strong>Gender</strong> (required): "Male" or "Female"</li>
+                        <li><strong>Total Beds</strong> (required): Number of beds in the room</li>
+                        <li><strong>Bed Numbers</strong> (optional): Comma-separated bed numbers or "RESERVED" for VIP rooms</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
+              ) : type === 'users' ? (
                 <div className="text-sm space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700">

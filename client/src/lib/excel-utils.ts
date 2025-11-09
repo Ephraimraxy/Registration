@@ -116,6 +116,147 @@ function generateDefaultBedNumbers(totalBeds: number): string[] {
   return bedNumbers;
 }
 
+export interface ExcelRoomRange {
+  'Room Range': string;
+  'Gender': string;
+  'Beds Per Room': number;
+  'Wing'?: string;
+}
+
+/**
+ * Parse room range format (e.g., "RA1-RA64", "201-234")
+ * Expands ranges into individual rooms
+ */
+function parseRoomRange(rangeStr: string, gender: 'Male' | 'Female', bedsPerRoom: number, wing?: string): InsertRoom[] {
+  const rooms: InsertRoom[] = [];
+  const trimmed = rangeStr.trim();
+  
+  // Handle special cases like "D&D 120"
+  if (!trimmed.includes('-')) {
+    // Single room
+    const roomNumber = trimmed;
+    const roomWing = wing || roomNumber.replace(/\d+/, '').trim() || 'A';
+    const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
+    
+    rooms.push({
+      wing: roomWing,
+      roomNumber: roomNumber,
+      gender: gender,
+      totalBeds: bedsPerRoom,
+      availableBeds: bedsPerRoom,
+      bedNumbers: bedNumbers,
+    });
+    return rooms;
+  }
+  
+  // Parse range format
+  const parts = trimmed.split('-');
+  if (parts.length !== 2) {
+    throw new Error(`Invalid room range format: ${rangeStr}`);
+  }
+  
+  const startStr = parts[0].trim();
+  const endStr = parts[1].trim();
+  
+  // Extract prefix (letters) and number from start
+  const startMatch = startStr.match(/^([A-Za-z&]+)?(\d+)$/);
+  const endMatch = endStr.match(/^([A-Za-z&]+)?(\d+)$/);
+  
+  if (!startMatch || !endMatch) {
+    throw new Error(`Invalid room range format: ${rangeStr}`);
+  }
+  
+  const startPrefix = startMatch[1] || '';
+  const startNum = parseInt(startMatch[2]);
+  const endPrefix = endMatch[1] || startPrefix; // Use start prefix if end doesn't have one
+  const endNum = parseInt(endMatch[2]);
+  
+  if (isNaN(startNum) || isNaN(endNum) || startNum > endNum) {
+    throw new Error(`Invalid room range numbers: ${rangeStr}`);
+  }
+  
+  // Determine wing
+  const roomWing = wing || startPrefix || 'A';
+  
+  // Generate rooms in range
+  for (let i = startNum; i <= endNum; i++) {
+    const roomNumber = startPrefix ? `${startPrefix}${i}` : i.toString();
+    const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
+    
+    rooms.push({
+      wing: roomWing,
+      roomNumber: roomNumber,
+      gender: gender,
+      totalBeds: bedsPerRoom,
+      availableBeds: bedsPerRoom,
+      bedNumbers: bedNumbers,
+    });
+  }
+  
+  return rooms;
+}
+
+export function parseRoomsExcelRangeFormat(file: File): Promise<InsertRoom[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData: ExcelRoomRange[] = XLSX.utils.sheet_to_json(worksheet);
+        
+        const allRooms: InsertRoom[] = [];
+        
+        jsonData.forEach((row, index) => {
+          // Validate required fields
+          if (!row['Room Range'] || !row.Gender || !row['Beds Per Room']) {
+            throw new Error(`Missing required fields in row ${index + 2}`);
+          }
+          
+          // Normalize gender
+          const normalizedGender = row.Gender.toString().toLowerCase();
+          if (normalizedGender !== 'male' && normalizedGender !== 'female') {
+            throw new Error(`Invalid gender "${row.Gender}" in row ${index + 2}. Must be "Male" or "Female"`);
+          }
+          
+          const gender = normalizedGender === 'male' ? 'Male' : 'Female';
+          
+          // Validate beds per room
+          const bedsPerRoom = typeof row['Beds Per Room'] === 'number' 
+            ? row['Beds Per Room'] 
+            : parseInt(row['Beds Per Room'].toString());
+          
+          if (isNaN(bedsPerRoom) || bedsPerRoom <= 0) {
+            throw new Error(`Invalid beds per room "${row['Beds Per Room']}" in row ${index + 2}. Must be a positive number`);
+          }
+          
+          // Get wing if provided
+          const wing = row.Wing ? row.Wing.toString().trim() : undefined;
+          
+          // Parse room range and expand to individual rooms
+          const roomRange = row['Room Range'].toString().trim();
+          const expandedRooms = parseRoomRange(roomRange, gender, bedsPerRoom, wing);
+          
+          allRooms.push(...expandedRooms);
+        });
+        
+        resolve(allRooms);
+      } catch (error: any) {
+        reject(new Error(`Error parsing Excel file: ${error.message}`));
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Error reading file'));
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export function parseRoomsExcel(file: File): Promise<InsertRoom[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

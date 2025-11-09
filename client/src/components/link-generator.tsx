@@ -178,20 +178,31 @@ export function LinkGenerator() {
 
             {generatedLink && (
               <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-200 rounded-lg space-y-2 border border-gray-300">
-                <Label className="text-gray-900 dark:text-gray-900">Generated Link:</Label>
-                <div className="flex items-center gap-2">
+                <Label className="text-gray-900 dark:text-gray-900">Generated Access Code:</Label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Input 
                     value={generatedLink} 
                     readOnly 
-                    className="font-mono text-sm bg-white dark:bg-white text-gray-900 border-gray-300" 
+                    className="font-mono text-xs sm:text-sm bg-white dark:bg-white text-gray-900 border-gray-300 break-all" 
                   />
-                  <Button size="sm" onClick={copyToClipboard}>
+                  <Button size="sm" onClick={copyToClipboard} className="shrink-0">
                     {copied ? (
-                      <Check className="h-4 w-4" />
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Copied
+                      </>
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy
+                      </>
                     )}
                   </Button>
+                </div>
+                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-100 rounded border border-blue-200">
+                  <p className="text-xs text-gray-700 dark:text-gray-700 font-medium">
+                    ⚠️ Share only the full link above. The access code alone will not work.
+                  </p>
                 </div>
                 <p className="text-xs text-gray-700 dark:text-gray-700">
                   Expires in: {form.getValues("days")} day(s) and {form.getValues("hours")} hour(s)

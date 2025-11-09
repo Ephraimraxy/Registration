@@ -62,10 +62,10 @@ function App() {
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-xs font-bold text-primary animate-pulse">TRAINING</div>
+              <div className="text-xs font-bold text-primary animate-pulse">ISAC</div>
             </div>
           </div>
-          <div className="text-lg font-bold text-primary animate-bounce">REGISTRATION</div>
+          <div className="text-lg font-bold text-primary animate-bounce">TRAINEE</div>
         </div>
       </div>
     );

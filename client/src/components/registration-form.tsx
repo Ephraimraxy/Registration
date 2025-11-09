@@ -454,7 +454,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
   return (
     <div className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6">
-      <Card className="shadow-lg">
+        <Card className="shadow-lg">
         <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8">
           <div className="text-center mb-4 sm:mb-6 md:mb-8">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1 sm:mb-2">TRAINEE ACCREDITATION</h2>
@@ -523,9 +523,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
               </div>
               <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
             </div>
-          </div>
+            </div>
 
-          <Form {...form}>
+            <Form {...form}>
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -539,12 +539,12 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
               >
                 {/* Step 1: Personal Information */}
                 {currentStep === 1 && (
-                  <div>
+                <div>
                     <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
                       <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                       <span className="truncate">Personal Information</span>
-                    </h3>
-                    
+                  </h3>
+                  
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
@@ -762,13 +762,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     </h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
                               <div className="relative">
                                 <Input 
                                   className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
@@ -795,19 +795,19 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                   </div>
                                 )}
                               </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
                             <FormLabel>Email Address (Optional)</FormLabel>
-                            <FormControl>
+                          <FormControl>
                               <div className="relative">
                                 <Input 
                                   type="email" 
@@ -835,32 +835,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                   </div>
                                 )}
                               </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="nin"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="nin"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
                             <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
-                            <FormControl>
+                          <FormControl>
                               <div className="relative">
-                                <Input 
-                                  maxLength={11}
+                            <Input 
+                              maxLength={11}
                                   className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300"
-                                  {...field} 
-                                  data-testid="input-nin"
+                              {...field} 
+                              data-testid="input-nin"
                                   onFocus={(e) => {
                                     e.currentTarget.classList.remove('animate-slow-pulse');
                                     setFieldAnimationActive(prev => ({ ...prev, nin: false }));
                                   }}
-                                  onChange={(e) => {
-                                    const value = e.target.value.replace(/\D/g, '');
-                                    field.onChange(value);
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                field.onChange(value);
                                     if (value) {
                                       setFieldAnimationActive(prev => ({ ...prev, nin: false }));
                                     }
@@ -876,153 +876,153 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                   </div>
                                 )}
                               </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
+                </div>
                 )}
 
                 {/* Step 3: Location Information */}
                 {currentStep === 3 && (
-                  <div>
+                <div>
                     <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
                       <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                       <span className="truncate">Location Information</span>
-                    </h3>
-                    
+                  </h3>
+                  
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                      <FormField
-                        control={form.control}
-                        name="stateOfOrigin"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State of Origin</FormLabel>
-                            <Select onValueChange={(value) => {
-                              field.onChange(value);
-                              setSelectedState(value);
-                              form.setValue("lga", ""); // Reset LGA when state changes
-                            }} value={field.value}>
-                              <FormControl>
+                    <FormField
+                      control={form.control}
+                      name="stateOfOrigin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State of Origin</FormLabel>
+                          <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            setSelectedState(value);
+                            form.setValue("lga", ""); // Reset LGA when state changes
+                          }} value={field.value}>
+                            <FormControl>
                                 <SelectTrigger 
                                   data-testid="select-state" 
                                   className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                                 >
                                   <SelectValue className="text-gray-900 dark:text-white" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                                {NIGERIAN_STATES.map((state, index) => (
-                                  <SelectItem 
-                                    key={state} 
-                                    value={state}
-                                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                      index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
-                                      index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                                      index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
-                                      index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
-                                      index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
-                                      'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
-                                    }`}
-                                  >
-                                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                                      <span className={`w-3 h-3 rounded-full shadow-sm ${
-                                        index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                                        index % 6 === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
-                                        index % 6 === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-600' :
-                                        index % 6 === 3 ? 'bg-gradient-to-r from-orange-500 to-amber-600' :
-                                        index % 6 === 4 ? 'bg-gradient-to-r from-pink-500 to-rose-600' :
-                                        'bg-gradient-to-r from-indigo-500 to-blue-600'
-                                      }`}></span>
-                                      {state}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="lga"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Local Government Area</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
-                              <FormControl>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                              {NIGERIAN_STATES.map((state, index) => (
+                                <SelectItem 
+                                  key={state} 
+                                  value={state}
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                    index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                    index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                    index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
+                                    index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
+                                    index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                    <span className={`w-3 h-3 rounded-full shadow-sm ${
+                                      index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                      index % 6 === 1 ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                                      index % 6 === 2 ? 'bg-gradient-to-r from-purple-500 to-violet-600' :
+                                      index % 6 === 3 ? 'bg-gradient-to-r from-orange-500 to-amber-600' :
+                                      index % 6 === 4 ? 'bg-gradient-to-r from-pink-500 to-rose-600' :
+                                      'bg-gradient-to-r from-indigo-500 to-blue-600'
+                                    }`}></span>
+                                    {state}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="lga"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Local Government Area</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={!selectedState}>
+                            <FormControl>
                                 <SelectTrigger 
                                   data-testid="select-lga" 
                                   className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
                                 >
                                   <SelectValue className="text-gray-900 dark:text-white" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                                {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
-                                  <SelectItem 
-                                    key={lga} 
-                                    value={lga}
-                                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                                      index % 5 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                                      index % 5 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
-                                      index % 5 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
-                                      index % 5 === 3 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
-                                      'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
-                                    }`}
-                                  >
-                                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                                      <span className={`w-2 h-2 rounded-full shadow-sm ${
-                                        index % 5 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                                        index % 5 === 1 ? 'bg-gradient-to-r from-teal-500 to-teal-600' :
-                                        index % 5 === 2 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
-                                        index % 5 === 3 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
-                                        'bg-gradient-to-r from-blue-500 to-blue-600'
-                                      }`}></span>
-                                      {lga}
-                                    </span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* VIP Status Checkbox */}
-                      <FormField
-                        control={form.control}
-                        name="isVip"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
-                            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value || false}
-                                  onCheckedChange={field.onChange}
-                                  data-testid="checkbox-vip"
-                                  className="w-5 h-5 border-2 border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                                />
-                              </FormControl>
-                              <div className="space-y-1">
-                                <FormLabel className="text-purple-800 dark:text-purple-200 font-bold text-lg cursor-pointer">
-                                  👑 VIP Status
-                                </FormLabel>
-                                <p className="text-sm text-purple-600 dark:text-purple-300">
-                                  Check this if the person is a VIP and should be assigned to reserved rooms
-                                </p>
-                              </div>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                              {selectedState && NIGERIAN_LGAS[selectedState as keyof typeof NIGERIAN_LGAS]?.map((lga, index) => (
+                                <SelectItem 
+                                  key={lga} 
+                                  value={lga}
+                                  className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                                    index % 5 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                                    index % 5 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                                    index % 5 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                                    index % 5 === 3 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                                    'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                                    <span className={`w-2 h-2 rounded-full shadow-sm ${
+                                      index % 5 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                                      index % 5 === 1 ? 'bg-gradient-to-r from-teal-500 to-teal-600' :
+                                      index % 5 === 2 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                                      index % 5 === 3 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                                      'bg-gradient-to-r from-blue-500 to-blue-600'
+                                    }`}></span>
+                                    {lga}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* VIP Status Checkbox */}
+                    <FormField
+                      control={form.control}
+                      name="isVip"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-vip"
+                                className="w-5 h-5 border-2 border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                              />
+                            </FormControl>
+                            <div className="space-y-1">
+                              <FormLabel className="text-purple-800 dark:text-purple-200 font-bold text-lg cursor-pointer">
+                                👑 VIP Status
+                              </FormLabel>
+                              <p className="text-sm text-purple-600 dark:text-purple-300">
+                                Check this if the person is a VIP and should be assigned to reserved rooms
+                              </p>
                             </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   </div>
                 )}
 
@@ -1140,46 +1140,46 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             </p>
                           )}
                         </FormItem>
-                      </div>
+                </div>
 
-                      {/* Availability Status */}
-                      {availabilityStatus && (
-                        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
-                          <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
-                            📊 Availability Status
-                          </h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                              <div>
-                                <div className="font-semibold text-gray-800 dark:text-gray-200">
-                                  {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '⏳ Rooms Pending'}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">
-                                  {availabilityStatus.hasAvailableRooms 
-                                    ? `${availabilityStatus.availableRoomCount} beds available`
-                                    : 'Will be assigned when available'
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                              <div>
-                                <div className="font-semibold text-gray-800 dark:text-gray-200">
-                                  {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '⏳ Tags Pending'}
-                                </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">
-                                  {availabilityStatus.hasAvailableTags 
-                                    ? `${availabilityStatus.availableTagCount} tags available`
-                                    : 'Will be assigned when available'
-                                  }
-                                </div>
-                              </div>
-                            </div>
+                {/* Availability Status */}
+                {availabilityStatus && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <h4 className="font-bold text-lg text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
+                      📊 Availability Status
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableRooms ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                        <div>
+                          <div className="font-semibold text-gray-800 dark:text-gray-200">
+                            {availabilityStatus.hasAvailableRooms ? '✅ Rooms Available' : '⏳ Rooms Pending'}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {availabilityStatus.hasAvailableRooms 
+                              ? `${availabilityStatus.availableRoomCount} beds available`
+                              : 'Will be assigned when available'
+                            }
                           </div>
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${availabilityStatus.hasAvailableTags ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                        <div>
+                          <div className="font-semibold text-gray-800 dark:text-gray-200">
+                            {availabilityStatus.hasAvailableTags ? '✅ Tags Available' : '⏳ Tags Pending'}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {availabilityStatus.hasAvailableTags 
+                              ? `${availabilityStatus.availableTagCount} tags available`
+                              : 'Will be assigned when available'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                      </div>
+                    )}
                     </div>
                   </div>
                 )}
@@ -1283,32 +1283,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button
-                      type="submit" 
-                      size="lg" 
-                      disabled={isSubmitting}
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    disabled={isSubmitting}
                       className="w-full sm:w-auto px-4 sm:px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 order-1 sm:order-2"
-                      data-testid="button-register"
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
+                    data-testid="button-register"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                           <span className="text-sm sm:text-base">Registering...</span>
-                        </div>
-                      ) : (
-                        <>
+                      </div>
+                    ) : (
+                      <>
                           <UserPlus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                           <span className="text-sm sm:text-base">SUBMIT</span>
-                        </>
-                      )}
-                    </Button>
+                      </>
+                    )}
+                  </Button>
                   )}
                 </div>
               </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
   );
 }
 

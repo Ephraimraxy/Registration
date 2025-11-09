@@ -122,9 +122,9 @@ export function SpecializationManagement() {
                 Add Specialization
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
               <DialogHeader>
-                <DialogTitle>Add New Specialization</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-900">Add New Specialization</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -133,9 +133,13 @@ export function SpecializationManagement() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Name *</FormLabel>
+                        <FormLabel className="text-gray-900 dark:text-gray-900">Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Poultry, Fisheries, Crop Production" {...field} />
+                          <Input 
+                            placeholder="e.g., Poultry, Fisheries, Crop Production" 
+                            {...field}
+                            className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -146,9 +150,13 @@ export function SpecializationManagement() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormLabel className="text-gray-900 dark:text-gray-900">Description (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Brief description" {...field} />
+                          <Input 
+                            placeholder="Brief description" 
+                            {...field}
+                            className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -210,10 +218,10 @@ export function SpecializationManagement() {
         </div>
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Specialization?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-gray-900 dark:text-gray-900">Delete Specialization?</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-700 dark:text-gray-700">
                 This action cannot be undone. This will remove the specialization from the system.
               </AlertDialogDescription>
             </AlertDialogHeader>

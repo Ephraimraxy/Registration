@@ -101,9 +101,9 @@ export function LinkGenerator() {
               Generate New Link
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
             <DialogHeader>
-              <DialogTitle>Generate Time-Limited Access Link</DialogTitle>
+              <DialogTitle className="text-gray-900 dark:text-gray-900">Generate Time-Limited Access Link</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -113,7 +113,7 @@ export function LinkGenerator() {
                     name="days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Days</FormLabel>
+                        <FormLabel className="text-gray-900 dark:text-gray-900">Days</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -121,6 +121,7 @@ export function LinkGenerator() {
                             max="365"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500"
                           />
                         </FormControl>
                         <FormMessage />
@@ -132,7 +133,7 @@ export function LinkGenerator() {
                     name="hours"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hours</FormLabel>
+                        <FormLabel className="text-gray-900 dark:text-gray-900">Hours</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -140,6 +141,7 @@ export function LinkGenerator() {
                             max="23"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500"
                           />
                         </FormControl>
                         <FormMessage />
@@ -166,10 +168,14 @@ export function LinkGenerator() {
             </Form>
 
             {generatedLink && (
-              <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
-                <Label>Generated Link:</Label>
+              <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-200 rounded-lg space-y-2 border border-gray-300">
+                <Label className="text-gray-900 dark:text-gray-900">Generated Link:</Label>
                 <div className="flex items-center gap-2">
-                  <Input value={generatedLink} readOnly className="font-mono text-sm" />
+                  <Input 
+                    value={generatedLink} 
+                    readOnly 
+                    className="font-mono text-sm bg-white dark:bg-white text-gray-900 border-gray-300" 
+                  />
                   <Button size="sm" onClick={copyToClipboard}>
                     {copied ? (
                       <Check className="h-4 w-4" />
@@ -178,7 +184,7 @@ export function LinkGenerator() {
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-700 dark:text-gray-700">
                   Expires in: {form.getValues("days")} day(s) and {form.getValues("hours")} hour(s)
                 </p>
               </div>

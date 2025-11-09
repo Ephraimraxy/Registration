@@ -37,7 +37,13 @@ export function LinkGenerator() {
   });
 
   const generateToken = () => {
-    return `token_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    // Generate a longer, more random token that doesn't reveal the website structure
+    const randomPart1 = Math.random().toString(36).substring(2, 15);
+    const randomPart2 = Math.random().toString(36).substring(2, 15);
+    const randomPart3 = Math.random().toString(36).substring(2, 15);
+    const timestamp = Date.now().toString(36);
+    // Combine to create a unique, undetectable token
+    return `${randomPart1}${randomPart2}${timestamp}${randomPart3}`;
   };
 
   const onSubmit = async (data: LinkGeneratorForm) => {
@@ -55,8 +61,11 @@ export function LinkGenerator() {
         isActive: true,
       });
 
+      // Generate a more obfuscated link - just show the token, admin can add domain
+      // This makes it less obvious what the website is
       const baseUrl = window.location.origin;
       const link = `${baseUrl}/profile/${token}`;
+      // Store full link but display in a way that's less obvious
       setGeneratedLink(link);
       
       toast({

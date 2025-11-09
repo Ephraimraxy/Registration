@@ -86,7 +86,8 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
       token = pathParts[pathParts.length - 1];
     }
     
-    if (token && token.startsWith("token_")) {
+    // Accept any token format (not just token_ prefix)
+    if (token && token.length > 10) {
       validateToken(token);
     } else {
       setTokenValid(false);
@@ -101,9 +102,12 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
 
   const validateToken = async (token: string) => {
     try {
+      // Remove any path or query parameters
+      const cleanToken = token.split('?')[0].split('#')[0];
+      
       const q = query(
         collection(db, "accessLinks"),
-        where("token", "==", token),
+        where("token", "==", cleanToken),
         where("isActive", "==", true)
       );
       const snapshot = await getDocs(q);
@@ -151,11 +155,29 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
     }
   };
 
+  const normalizeTagNumber = (input: string): string | null => {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    
+    // Remove any "TAG-" or "tag-" prefix (case insensitive)
+    const cleaned = trimmed.replace(/^tag-?/i, '');
+    
+    // Check if it's a valid format (at least 3 digits, like 002, 012, etc.)
+    if (!/^\d{3,}$/.test(cleaned)) {
+      return null; // Reject single or double digits like "2" or "12"
+    }
+    
+    // Try to find with different formats
+    return cleaned;
+  };
+
   const handleTagSubmit = async () => {
-    if (!tagNumber.trim()) {
+    const normalizedTag = normalizeTagNumber(tagNumber);
+    
+    if (!normalizedTag) {
       toast({
         title: "Error",
-        description: "Please enter your tag number",
+        description: "Please enter a valid tag number (e.g., 002 or TAG-002). Single digits are not accepted.",
         variant: "destructive",
       });
       return;
@@ -163,10 +185,21 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
 
     setIsLoading(true);
     try {
-      const q = query(collection(db, "users"), where("tagNumber", "==", tagNumber.trim()));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
+      // Try to find user with normalized tag number (with and without TAG- prefix)
+      const possibleTags = [normalizedTag, `TAG-${normalizedTag}`, `tag-${normalizedTag}`];
+      
+      let foundUser = null;
+      for (const tag of possibleTags) {
+        const q = query(collection(db, "users"), where("tagNumber", "==", tag));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          foundUser = snapshot.docs[0];
+          break;
+        }
+      }
+      
+      if (!foundUser) {
         toast({
           title: "Not Found",
           description: "No user found with this tag number. Please check and try again.",
@@ -176,7 +209,7 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
         return;
       }
 
-      const userDoc = snapshot.docs[0];
+      const userDoc = foundUser;
       const data = userDoc.data();
       
       const user: UserData = {
@@ -249,6 +282,13 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
         ...userData,
         ...data,
       });
+
+      // Redirect to welcome page after 1.5 seconds
+      setTimeout(() => {
+        setStep("welcome");
+        setTagNumber("");
+        form.reset();
+      }, 1500);
     } catch (error: any) {
       console.error("Error updating user:", error);
       toast({
@@ -515,14 +555,23 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
                           <FormLabel>Area of Specialization *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your area of specialization" />
+                              <SelectTrigger className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500 h-12 text-base">
+                                <SelectValue placeholder="Select your area of specialization" className="text-gray-900" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="bg-white dark:bg-white border-2 border-gray-200 shadow-xl max-h-[300px]">
                               {specializations.map((spec) => (
-                                <SelectItem key={spec.id} value={spec.name}>
-                                  {spec.name}
+                                <SelectItem 
+                                  key={spec.id} 
+                                  value={spec.name}
+                                  className="text-gray-900 hover:bg-blue-50 dark:hover:bg-blue-50 focus:bg-blue-100 dark:focus:bg-blue-100 py-3 text-base cursor-pointer"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{spec.name}</span>
+                                    {spec.description && (
+                                      <span className="text-xs text-gray-600 mt-1">{spec.description}</span>
+                                    )}
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>

@@ -21,6 +21,7 @@ import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 import { SpecializationManagement } from "./specialization-management";
 import { LinkGenerator } from "./link-generator";
+import { AttendanceManagement } from "./attendance-management";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { clearAllData } from "@/lib/db-init";
@@ -727,15 +728,6 @@ export function AdminDashboard() {
               <Upload className="mr-2 h-4 w-4" />
               Upload Users (Excel)
             </Button>
-            <Button onClick={() => {
-              toast({
-                title: "Attendance Feature",
-                description: "Attendance management feature coming soon!",
-              });
-            }} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <ClipboardCheck className="mr-2 h-4 w-4" />
-              📋 Attendance
-            </Button>
             <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
               {/* Export Format Selection */}
               <div className="flex flex-col sm:flex-row gap-2">
@@ -809,6 +801,9 @@ export function AdminDashboard() {
         <SpecializationManagement />
         <LinkGenerator />
       </div>
+
+      {/* Attendance Management */}
+      <AttendanceManagement />
 
       {/* Bulk Delete Controls */}
       <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">

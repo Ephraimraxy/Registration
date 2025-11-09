@@ -11,6 +11,7 @@ import { RoomsTagsDetailPage } from "@/components/rooms-tags-detail-page";
 import { UserDetailsPage } from "@/components/user-details-page";
 import { ProtectedAdminRoute } from "@/components/protected-admin-route";
 import { UserProfile } from "@/pages/user-profile";
+import { AttendancePage } from "@/pages/attendance-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,9 @@ function Router() {
       <Route path="/user-details" component={() => <UserDetailsPage user={JSON.parse(localStorage.getItem('viewingUser') || '{}')} onBack={() => window.history.back()} />} />
       <Route path="/profile/:token">
         {(params) => <UserProfile token={params.token} />}
+      </Route>
+      <Route path="/attendance/:token">
+        {(params) => <AttendancePage token={params.token} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

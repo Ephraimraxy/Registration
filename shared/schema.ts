@@ -19,6 +19,7 @@ export const userSchema = z.object({
   roomStatus: z.enum(["assigned", "pending"]).optional(),
   tagStatus: z.enum(["assigned", "pending"]).optional(),
   isVip: z.boolean().optional(), // VIP status for special room assignment
+  specialization: z.string().optional(), // Area of specialization
   createdAt: z.date(),
 });
 
@@ -72,3 +73,30 @@ export type InsertRoom = z.infer<typeof insertRoomSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Stats = z.infer<typeof statsSchema>;
+
+// Specialization schema
+export const specializationSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Specialization name is required"),
+  description: z.string().optional(),
+  createdAt: z.date(),
+});
+
+export const insertSpecializationSchema = specializationSchema.omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Specialization = z.infer<typeof specializationSchema>;
+export type InsertSpecialization = z.infer<typeof insertSpecializationSchema>;
+
+// Access link schema
+export const accessLinkSchema = z.object({
+  id: z.string(),
+  token: z.string(),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+  isActive: z.boolean().default(true),
+});
+
+export type AccessLink = z.infer<typeof accessLinkSchema>;

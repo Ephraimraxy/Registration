@@ -17,6 +17,8 @@ import { StudentTable } from "./student-table";
 import { UploadModal } from "./upload-modal";
 import { EditStudentModal } from "./edit-student-modal";
 import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
+import { SpecializationManagement } from "./specialization-management";
+import { LinkGenerator } from "./link-generator";
 import { exportUsersToExcel } from "@/lib/excel-utils";
 import { exportUsersToPDF } from "@/lib/pdf-utils";
 import { clearAllData } from "@/lib/db-init";

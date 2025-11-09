@@ -10,6 +10,7 @@ import Home from "@/pages/home";
 import { RoomsTagsDetailPage } from "@/components/rooms-tags-detail-page";
 import { UserDetailsPage } from "@/components/user-details-page";
 import { ProtectedAdminRoute } from "@/components/protected-admin-route";
+import { UserProfile } from "@/pages/user-profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {

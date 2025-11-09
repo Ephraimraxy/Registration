@@ -1154,12 +1154,17 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                             const roomNumStr = room.roomNumber.toString();
                                             const wingStr = room.wing.toString();
                                             
-                                            // If roomNumber starts with the wing prefix, it's range format
-                                            if (roomNumStr.toUpperCase().startsWith(wingStr.toUpperCase())) {
-                                              return roomNumStr; // Display as "A204", "RA1", etc.
+                                            // Check if roomNumber starts with letters (range format)
+                                            // Range format rooms have the wing prefix in the roomNumber (e.g., "A402", "RA1")
+                                            const hasLetterPrefix = /^[A-Za-z&]+/.test(roomNumStr);
+                                            
+                                            if (hasLetterPrefix) {
+                                              // Range format: roomNumber already includes wing (e.g., "A402")
+                                              return roomNumStr; // Display as "A402", "RA1", etc.
+                                            } else {
+                                              // Standard format: roomNumber is just number, wing is separate
+                                              return `${roomNumStr} (Wing ${wingStr})`; // Display as "402 (Wing A)"
                                             }
-                                            // Otherwise, it's standard format
-                                            return `${roomNumStr} (Wing ${wingStr})`; // Display as "204 (Wing A)"
                                           })()}
                                         </strong>
                                         {room.gender !== selectedGender && allowCrossGender && (
@@ -1226,7 +1231,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                       index % 4 === 2 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
                                       'bg-gradient-to-r from-orange-500 to-orange-600'
                                     }`}></span>
-                                    Tag {tag.tagNumber}
+                                    {tag.tagNumber}
                                   </span>
                                 </SelectItem>
                               ))}

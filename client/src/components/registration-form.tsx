@@ -386,60 +386,76 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const stepIcons = [User, Phone, MapPin, Building, CheckCircle2];
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6">
       <Card className="shadow-lg">
-        <CardContent className="p-4 sm:p-6 md:p-8">
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">TRAINEE ACCREDITATION</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Complete your registration in {totalSteps} steps</p>
+        <CardContent className="p-3 sm:p-4 md:p-6 lg:p-8">
+          <div className="text-center mb-4 sm:mb-6 md:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1 sm:mb-2">TRAINEE ACCREDITATION</h2>
+            <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Complete your registration in {totalSteps} steps</p>
           </div>
 
           {/* Step Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
-                const StepIcon = stepIcons[step - 1];
-                const isActive = step === currentStep;
-                const isCompleted = step < currentStep;
-                return (
-                  <div key={step} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-1">
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                          isActive
-                            ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg scale-110"
-                            : isCompleted
-                            ? "bg-green-500 text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="h-6 w-6" />
-                        ) : (
-                          <StepIcon className="h-6 w-6" />
-                        )}
-                      </div>
-                      <p className={`text-xs mt-2 text-center font-medium ${
-                        isActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
-                      }`}>
-                        Step {step}
-                      </p>
-                      <p className={`text-xs text-center ${
-                        isActive ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-muted-foreground"
-                      }`}>
-                        {stepTitles[step - 1]}
-                      </p>
-                    </div>
-                    {step < totalSteps && (
-                      <div className={`flex-1 h-1 mx-2 transition-all duration-300 ${
-                        step < currentStep ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-                      }`} />
-                    )}
-                  </div>
-                );
-              })}
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            {/* Mobile: Simplified progress */}
+            <div className="block sm:hidden mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Step {currentStep} of {totalSteps}
+                </span>
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                  {stepTitles[currentStep - 1]}
+                </span>
+              </div>
+              <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
             </div>
-            <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+            
+            {/* Desktop: Full progress indicator */}
+            <div className="hidden sm:block">
+              <div className="flex items-center justify-between mb-4 overflow-x-auto pb-2">
+                {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
+                  const StepIcon = stepIcons[step - 1];
+                  const isActive = step === currentStep;
+                  const isCompleted = step < currentStep;
+                  return (
+                    <div key={step} className="flex items-center flex-1 min-w-0">
+                      <div className="flex flex-col items-center flex-1 min-w-0">
+                        <div
+                          className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                            isActive
+                              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg scale-110"
+                              : isCompleted
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                          ) : (
+                            <StepIcon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                          )}
+                        </div>
+                        <p className={`text-[10px] sm:text-xs mt-1 sm:mt-2 text-center font-medium truncate w-full px-1 ${
+                          isActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
+                        }`}>
+                          Step {step}
+                        </p>
+                        <p className={`text-[9px] sm:text-xs text-center truncate w-full px-1 ${
+                          isActive ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-muted-foreground"
+                        }`}>
+                          {stepTitles[step - 1]}
+                        </p>
+                      </div>
+                      {step < totalSteps && (
+                        <div className={`flex-1 h-1 mx-1 sm:mx-2 transition-all duration-300 min-w-[20px] ${
+                          step < currentStep ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+                        }`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+            </div>
           </div>
 
           <Form {...form}>
@@ -457,9 +473,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 {/* Step 1: Personal Information */}
                 {currentStep === 1 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                      <User className="mr-2 h-5 w-5 text-primary" />
-                      Personal Information
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+                      <User className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Personal Information</span>
                     </h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -592,9 +608,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 {/* Step 2: Contact Information */}
                 {currentStep === 2 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                      <Phone className="mr-2 h-5 w-5 text-primary" />
-                      Contact Information
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+                      <Phone className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Contact Information</span>
                     </h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -670,9 +686,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 {/* Step 3: Location Information */}
                 {currentStep === 3 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                      <MapPin className="mr-2 h-5 w-5 text-primary" />
-                      Location Information
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+                      <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Location Information</span>
                     </h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -811,9 +827,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 {/* Step 4: Room & Tag Selection */}
                 {currentStep === 4 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                      <Building className="mr-2 h-5 w-5 text-primary" />
-                      Room & Tag Selection
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+                      <Building className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Room & Tag Selection</span>
                     </h3>
                     
                     <div className="space-y-6">
@@ -969,13 +985,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 {/* Step 5: Review & Submit */}
                 {currentStep === 5 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-                      <CheckCircle2 className="mr-2 h-5 w-5 text-primary" />
-                      Review & Submit
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center">
+                      <CheckCircle2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Review & Submit</span>
                     </h3>
                     
-                    <div className="space-y-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4 p-3 sm:p-4 md:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <h4 className="font-semibold text-sm text-muted-foreground mb-2">Personal Information</h4>
                           <div className="space-y-1 text-sm">
@@ -1014,17 +1030,17 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                 {/* Progress Display */}
                 {isSubmitting && (
-                  <div className="space-y-4 py-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {registrationStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                        {registrationStatus === 'checking-availability' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                        {registrationStatus === 'finding-room' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                        {registrationStatus === 'finding-tag' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                        {registrationStatus === 'creating-user' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                        {registrationStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        {registrationStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-                        <span className="text-sm font-medium">
+                  <div className="space-y-3 sm:space-y-4 py-4 sm:py-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {registrationStatus === 'validating' && <Loader2 className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />}
+                        {registrationStatus === 'checking-availability' && <Loader2 className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />}
+                        {registrationStatus === 'finding-room' && <Loader2 className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />}
+                        {registrationStatus === 'finding-tag' && <Loader2 className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />}
+                        {registrationStatus === 'creating-user' && <Loader2 className="h-4 w-4 animate-spin text-blue-500 flex-shrink-0" />}
+                        {registrationStatus === 'success' && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+                        {registrationStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                        <span className="text-xs sm:text-sm font-medium truncate">
                           {registrationStatus === 'validating' && 'Validating data...'}
                           {registrationStatus === 'checking-availability' && 'Checking availability...'}
                           {registrationStatus === 'finding-room' && 'Finding available room...'}
@@ -1034,7 +1050,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           {registrationStatus === 'error' && 'Registration failed'}
                         </span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                         {Math.round(registrationProgress)}%
                       </span>
                     </div>
@@ -1043,13 +1059,13 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 )}
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between items-center pt-6 border-t">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-6 border-t">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleBack}
                     disabled={currentStep === 1 || isSubmitting}
-                    className="flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto order-2 sm:order-1"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Back
@@ -1059,7 +1075,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      className="flex items-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      className="flex items-center justify-center gap-2 w-full sm:w-auto bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 order-1 sm:order-2"
                     >
                       Next
                       <ChevronRight className="h-4 w-4" />
@@ -1069,18 +1085,18 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       type="submit" 
                       size="lg" 
                       disabled={isSubmitting}
-                      className="px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      className="w-full sm:w-auto px-4 sm:px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 order-1 sm:order-2"
                       data-testid="button-register"
                     >
                       {isSubmitting ? (
                         <div className="flex items-center gap-2">
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Registering...
+                          <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                          <span className="text-sm sm:text-base">Registering...</span>
                         </div>
                       ) : (
                         <>
-                          <UserPlus className="mr-2 h-5 w-5" />
-                          SUBMIT
+                          <UserPlus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                          <span className="text-sm sm:text-base">SUBMIT</span>
                         </>
                       )}
                     </Button>

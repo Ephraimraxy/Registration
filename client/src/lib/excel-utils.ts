@@ -335,11 +335,45 @@ export function parseUsersExcel(file: File): Promise<InsertUser[]> {
   });
 }
 
-export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' = 'full'): void {
+export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' | 'custom' = 'full', selectedColumns?: string[]): void {
   try {
     let exportData;
     
-    if (exportType === 'summary') {
+    if (exportType === 'custom' && selectedColumns) {
+      // Custom format - only selected columns
+      const columnMap: Record<string, (user: any) => string> = {
+        'First Name': (user) => user.firstName || '',
+        'Middle Name': (user) => user.middleName || '',
+        'Surname': (user) => user.surname || '',
+        'Full Name': (user) => `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim(),
+        'Date of Birth': (user) => user.dob ? new Date(user.dob).toLocaleDateString() : '',
+        'Gender': (user) => user.gender || '',
+        'Phone': (user) => user.phone || '',
+        'Email': (user) => user.email || 'Not provided',
+        'NIN': (user) => user.nin || 'Not provided',
+        'State of Origin': (user) => user.stateOfOrigin || '',
+        'LGA': (user) => user.lga || '',
+        'Wing': (user) => (user as any).wing || 'Not assigned',
+        'Room Number': (user) => user.roomNumber || 'Not assigned',
+        'Bed Number': (user) => user.bedNumber || 'Not assigned',
+        'Room Status': (user) => user.roomStatus || 'Not assigned',
+        'Tag Number': (user) => user.tagNumber || 'Not assigned',
+        'Tag Status': (user) => user.tagStatus || 'Not assigned',
+        'Specialization': (user) => user.specialization || 'Not selected',
+        'VIP Status': (user) => (user as any).isVip ? 'Yes' : 'No',
+        'Registration Date': (user) => user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
+      };
+
+      exportData = users.map(user => {
+        const row: Record<string, string> = {};
+        selectedColumns.forEach(col => {
+          if (columnMap[col]) {
+            row[col] = columnMap[col](user);
+          }
+        });
+        return row;
+      });
+    } else if (exportType === 'summary') {
       // Summary format - only essential fields
       exportData = users.map(user => ({
         'Name': `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim(),
@@ -349,6 +383,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         'State': user.stateOfOrigin || '',
         'Phone': user.phone || '',
         'Email': user.email || '',
+        'Specialization': user.specialization || 'Not selected',
       }));
     } else {
       // Full format - all fields
@@ -369,6 +404,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         'Room Status': user.roomStatus || 'Not assigned',
         'Tag Number': user.tagNumber || 'Not assigned',
         'Tag Status': user.tagStatus || 'Not assigned',
+        'Specialization': user.specialization || 'Not selected',
         'VIP Status': (user as any).isVip ? 'Yes' : 'No',
         'Registration Date': user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
       }));
@@ -378,7 +414,32 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
     
     // Set column widths based on export type
     let colWidths;
-    if (exportType === 'summary') {
+    if (exportType === 'custom' && selectedColumns) {
+      // Dynamic column widths for custom export
+      const widthMap: Record<string, number> = {
+        'First Name': 15,
+        'Middle Name': 15,
+        'Surname': 15,
+        'Full Name': 25,
+        'Date of Birth': 12,
+        'Gender': 8,
+        'Phone': 15,
+        'Email': 25,
+        'NIN': 15,
+        'State of Origin': 20,
+        'LGA': 20,
+        'Wing': 10,
+        'Room Number': 12,
+        'Bed Number': 12,
+        'Room Status': 12,
+        'Tag Number': 12,
+        'Tag Status': 12,
+        'Specialization': 25,
+        'VIP Status': 10,
+        'Registration Date': 15,
+      };
+      colWidths = selectedColumns.map(col => ({ wch: widthMap[col] || 15 }));
+    } else if (exportType === 'summary') {
       colWidths = [
         { wch: 25 }, // Name
         { wch: 8 },  // Gender
@@ -406,6 +467,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         { wch: 12 }, // Room Status
         { wch: 12 }, // Tag Number
         { wch: 12 }, // Tag Status
+        { wch: 25 }, // Specialization
         { wch: 10 }, // VIP Status
         { wch: 15 }, // Registration Date
       ];

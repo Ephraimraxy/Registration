@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare } from "lucide-react";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { db, auth } from "@/lib/firebase";
 import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
@@ -40,7 +41,9 @@ export function AdminDashboard() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [, setLocation] = useLocation();
   const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
-  const [exportType, setExportType] = useState<'full' | 'summary'>('full');
+  const [exportType, setExportType] = useState<'full' | 'summary' | 'custom'>('full');
+  const [showCustomExportDialog, setShowCustomExportDialog] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   
   // Bulk delete state for tags and rooms
   const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
@@ -286,9 +289,14 @@ export function AdminDashboard() {
   };
 
   const handleExport = () => {
+    if (exportType === 'custom') {
+      setShowCustomExportDialog(true);
+      return;
+    }
+    
     try {
       if (exportFormat === 'excel') {
-        exportUsersToExcel(users, exportType);
+        exportUsersToExcel(users, exportType, exportType === 'custom' ? selectedColumns : undefined);
         toast({
           title: "Export Successful",
           description: `Students data has been exported to Excel (${exportType} format) successfully!`,
@@ -309,6 +317,64 @@ export function AdminDashboard() {
       });
     }
   };
+
+  const handleCustomExport = () => {
+    if (selectedColumns.length === 0) {
+      toast({
+        title: "No Columns Selected",
+        description: "Please select at least one column to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (exportFormat === 'excel') {
+        exportUsersToExcel(users, 'custom', selectedColumns);
+        toast({
+          title: "Export Successful",
+          description: `Students data has been exported to Excel with selected columns successfully!`,
+        });
+      } else {
+        // For PDF, we'll use full export with a note
+        exportUsersToPDF(users, 'full');
+        toast({
+          title: "Export Successful",
+          description: `PDF report generated. Note: Custom column selection is available for Excel exports.`,
+        });
+      }
+      setShowCustomExportDialog(false);
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const availableColumns = [
+    'First Name',
+    'Middle Name',
+    'Surname',
+    'Full Name',
+    'Date of Birth',
+    'Gender',
+    'Phone',
+    'Email',
+    'NIN',
+    'State of Origin',
+    'LGA',
+    'Wing',
+    'Room Number',
+    'Bed Number',
+    'Room Status',
+    'Tag Number',
+    'Tag Status',
+    'Specialization',
+    'VIP Status',
+    'Registration Date',
+  ];
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
@@ -692,15 +758,20 @@ export function AdminDashboard() {
               
               {/* Export Type Tabs */}
               <div className="flex justify-center">
-                <Tabs value={exportType} onValueChange={(value) => setExportType(value as 'full' | 'summary')} className="w-full max-w-md">
-                  <TabsList className="grid w-full grid-cols-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-                    <TabsTrigger value="full" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Full Details
+                <Tabs value={exportType} onValueChange={(value) => setExportType(value as 'full' | 'summary' | 'custom')} className="w-full max-w-md">
+                  <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <TabsTrigger value="full" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Full</span>
+                      <span className="sm:hidden">All</span>
                     </TabsTrigger>
-                    <TabsTrigger value="summary" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
+                    <TabsTrigger value="summary" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                       Summary
+                    </TabsTrigger>
+                    <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
+                      <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+                      Custom
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -1038,6 +1109,69 @@ export function AdminDashboard() {
         onEdit={handleEdit}
         onViewDetails={handleViewDetails}
       />
+
+      {/* Custom Export Dialog */}
+      {showCustomExportDialog && (
+        <Dialog open={showCustomExportDialog} onOpenChange={setShowCustomExportDialog}>
+          <DialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900 dark:text-gray-900">Select Columns to Export</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedColumns([...availableColumns])}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedColumns([])}
+                >
+                  Deselect All
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {availableColumns.map((column) => (
+                  <div key={column} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`column-${column}`}
+                      checked={selectedColumns.includes(column)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedColumns([...selectedColumns, column]);
+                        } else {
+                          setSelectedColumns(selectedColumns.filter(c => c !== column));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor={`column-${column}`}
+                      className="text-sm text-gray-900 dark:text-gray-900 cursor-pointer"
+                    >
+                      {column}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowCustomExportDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCustomExport} disabled={selectedColumns.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Selected ({selectedColumns.length})
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Modals */}
       {showUploadModal && (

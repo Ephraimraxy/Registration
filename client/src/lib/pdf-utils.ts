@@ -133,8 +133,9 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
         user.stateOfOrigin || 'Not provided',
         user.phone || 'Not provided',
         user.email || 'Not provided',
+        user.specialization || 'Not selected',
       ]);
-      tableHeaders = [['#', 'Name', 'Gender', 'Room', 'Tag', 'State', 'Phone', 'Email']];
+      tableHeaders = [['#', 'Name', 'Gender', 'Room', 'Tag', 'State', 'Phone', 'Email', 'Specialization']];
     } else {
       // Full format - all fields
       tableData = users.map((user, index) => [
@@ -152,10 +153,11 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
         user.roomStatus || 'Not assigned',
         user.tagNumber || 'Not assigned',
         user.tagStatus || 'Not assigned',
+        user.specialization || 'Not selected',
         (user as any).isVip ? 'Yes' : 'No',
         formatDate(user.createdAt),
       ]);
-      tableHeaders = [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'NIN', 'State', 'LGA', 'Wing', 'Room', 'Bed', 'Room Status', 'Tag', 'Tag Status', 'VIP', 'Reg. Date']];
+      tableHeaders = [['#', 'Full Name', 'Gender', 'Phone', 'Email', 'NIN', 'State', 'LGA', 'Wing', 'Room', 'Bed', 'Room Status', 'Tag', 'Tag Status', 'Specialization', 'VIP', 'Reg. Date']];
     }
     
     // Generate table
@@ -189,6 +191,7 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
         5: { cellWidth: 25 },
         6: { cellWidth: 25 },
         7: { cellWidth: 40 },
+        8: { cellWidth: 30 },
       } : {
         // Full format column styles
         0: { halign: 'center', cellWidth: 8 },
@@ -205,8 +208,9 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
         11: { halign: 'center', cellWidth: 12 },
         12: { halign: 'center', cellWidth: 12 },
         13: { halign: 'center', cellWidth: 12 },
-        14: { halign: 'center', cellWidth: 8 },
-        15: { halign: 'center', cellWidth: 18 },
+        14: { cellWidth: 25 },
+        15: { halign: 'center', cellWidth: 8 },
+        16: { halign: 'center', cellWidth: 18 },
       },
       margin: { left: 20, right: 20 },
     });

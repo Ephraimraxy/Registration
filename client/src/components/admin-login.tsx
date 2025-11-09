@@ -3,12 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building, Lock, Mail, Loader2, AlertCircle, ArrowLeft, X } from "lucide-react";
+import { Building, Lock, Mail, Loader2, AlertCircle } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useLocation } from "wouter";
 
 export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [email, setEmail] = useState("hoseaephraim50@gmail.com");
@@ -16,7 +15,6 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,19 +45,7 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-2 border-blue-200 dark:border-blue-800 relative">
-        {/* Back/Cancel Button - Top Left */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute left-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-10"
-          onClick={() => setLocation("/")}
-          disabled={isLoading}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="sr-only">Go back</span>
-        </Button>
-        
+      <Card className="w-full max-w-md shadow-2xl border-2 border-blue-200 dark:border-blue-800">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
             <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full">

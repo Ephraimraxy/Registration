@@ -826,11 +826,11 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                 )}
 
                 <div className="flex justify-center pt-4">
-                  <Button 
+                  <Button
                     type="submit" 
                     size="lg" 
                     disabled={isSubmitting}
-                    className="px-8"
+                    className="px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                     data-testid="button-register"
                   >
                     {isSubmitting ? (
@@ -841,7 +841,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                     ) : (
                       <>
                         <UserPlus className="mr-2 h-5 w-5" />
-                        Register & Get Room Assignment
+                        SUBMIT
                       </>
                     )}
                   </Button>

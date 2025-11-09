@@ -88,6 +88,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [selectedTagId, setSelectedTagId] = useState<string>("");
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
+  const [allowCrossGender, setAllowCrossGender] = useState(false);
   const { toast } = useToast();
   
   // Field animation states

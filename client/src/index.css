@@ -309,9 +309,50 @@
 
 .floating-label input:focus + label,
 .floating-label input:not(:placeholder-shown) + label,
-.floating-label select:focus + label,
-.floating-label select:not([value=""]) + label {
-  top: -0.5rem;
-  font-size: 0.75rem;
-  color: hsl(var(--ring));
+  .floating-label select:focus + label,
+  .floating-label select:not([value=""]) + label {
+    top: -0.5rem;
+    font-size: 0.75rem;
+    color: hsl(var(--ring));
+  }
+
+  /* Slow pulse animation for form fields */
+  @keyframes slow-pulse {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  .animate-slow-pulse {
+    animation: slow-pulse 3s ease-in-out infinite;
+  }
+
+  /* Typing animation for placeholder text */
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes blink-cursor {
+    from, to {
+      border-color: transparent;
+    }
+    50% {
+      border-color: currentColor;
+    }
+  }
+
+  .typing-animation {
+    overflow: hidden;
+    border-right: 2px solid;
+    white-space: nowrap;
+    animation: typing 2s steps(20, end), blink-cursor 0.75s step-end infinite;
+  }
 }

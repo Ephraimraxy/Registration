@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag, ChevronRight, ChevronLeft, Phone, Mail, FileText, CheckCircle2 } from "lucide-react";
+import { UserPlus, User, MapPin, Loader2, CheckCircle, AlertCircle, Building, Tag, ChevronRight, ChevronLeft, Phone, Mail, FileText, CheckCircle2, Pen } from "lucide-react";
 import { validateRegistrationData } from "@/lib/firebase";
 import { flexibleAssignRoomAndTag } from "@/lib/flexible-registration-utils";
 import { validateAvailability } from "@/lib/availability-utils";
@@ -88,6 +88,73 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const { toast } = useToast();
+  
+  // Field animation states
+  const [fieldAnimationActive, setFieldAnimationActive] = useState<Record<string, boolean>>({
+    firstName: true,
+    surname: true,
+    middleName: true,
+    dob: true,
+    phone: true,
+    email: true,
+    nin: true,
+  });
+
+  // Animated placeholder hook
+  const useAnimatedPlaceholder = (placeholderText: string, isActive: boolean) => {
+    const [displayedText, setDisplayedText] = useState("");
+    const [isTyping, setIsTyping] = useState(true);
+
+    useEffect(() => {
+      if (!isActive) {
+        setDisplayedText("");
+        setIsTyping(true);
+        return;
+      }
+
+      let timeout: NodeJS.Timeout;
+      let currentIndex = 0;
+
+      const typeText = () => {
+        if (currentIndex < placeholderText.length) {
+          setDisplayedText(placeholderText.slice(0, currentIndex + 1));
+          currentIndex++;
+          timeout = setTimeout(typeText, 100);
+        } else {
+          timeout = setTimeout(() => {
+            setIsTyping(false);
+            const deleteText = () => {
+              if (currentIndex > 0) {
+                setDisplayedText(placeholderText.slice(0, currentIndex - 1));
+                currentIndex--;
+                timeout = setTimeout(deleteText, 50);
+              } else {
+                setIsTyping(true);
+                timeout = setTimeout(typeText, 500);
+              }
+            };
+            deleteText();
+          }, 2000);
+        }
+      };
+
+      timeout = setTimeout(typeText, 500);
+      return () => clearTimeout(timeout);
+    }, [placeholderText, isActive]);
+
+    return { displayedText, isTyping };
+  };
+
+  // Animated placeholders for each field
+  const animatedPlaceholders = {
+    firstName: useAnimatedPlaceholder("Enter your first name", fieldAnimationActive.firstName),
+    surname: useAnimatedPlaceholder("Enter your surname", fieldAnimationActive.surname),
+    middleName: useAnimatedPlaceholder("Enter your middle name", fieldAnimationActive.middleName),
+    dob: useAnimatedPlaceholder("Select your date of birth", fieldAnimationActive.dob),
+    phone: useAnimatedPlaceholder("Enter your phone number", fieldAnimationActive.phone),
+    email: useAnimatedPlaceholder("Enter your email address", fieldAnimationActive.email),
+    nin: useAnimatedPlaceholder("Enter your NIN", fieldAnimationActive.nin),
+  };
   
   const form = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
@@ -486,12 +553,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
                           <FormControl>
-                            <Input 
-                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
-                              {...field} 
-                              data-testid="input-first-name"
-                              onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                            />
+                            <div className="relative">
+                              <Input 
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
+                                {...field} 
+                                data-testid="input-first-name"
+                                onFocus={(e) => {
+                                  e.currentTarget.classList.remove('animate-slow-pulse');
+                                  setFieldAnimationActive(prev => ({ ...prev, firstName: false }));
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value) {
+                                    setFieldAnimationActive(prev => ({ ...prev, firstName: false }));
+                                  }
+                                }}
+                              />
+                              {!field.value && (
+                                <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                  <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                  <span className="text-gray-500 dark:text-white/50 text-sm">
+                                    {animatedPlaceholders.firstName.displayedText}
+                                    {animatedPlaceholders.firstName.isTyping && <span className="animate-pulse">|</span>}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -505,12 +592,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Surname</FormLabel>
                           <FormControl>
-                            <Input 
-                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
-                              {...field} 
-                              data-testid="input-surname"
-                              onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                            />
+                            <div className="relative">
+                              <Input 
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
+                                {...field} 
+                                data-testid="input-surname"
+                                onFocus={(e) => {
+                                  e.currentTarget.classList.remove('animate-slow-pulse');
+                                  setFieldAnimationActive(prev => ({ ...prev, surname: false }));
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value) {
+                                    setFieldAnimationActive(prev => ({ ...prev, surname: false }));
+                                  }
+                                }}
+                              />
+                              {!field.value && (
+                                <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                  <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                  <span className="text-gray-500 dark:text-white/50 text-sm">
+                                    {animatedPlaceholders.surname.displayedText}
+                                    {animatedPlaceholders.surname.isTyping && <span className="animate-pulse">|</span>}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -524,12 +631,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Middle Name (Optional)</FormLabel>
                           <FormControl>
-                            <Input 
-                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
-                              {...field} 
-                              data-testid="input-middle-name"
-                              onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                            />
+                            <div className="relative">
+                              <Input 
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
+                                {...field} 
+                                data-testid="input-middle-name"
+                                onFocus={(e) => {
+                                  e.currentTarget.classList.remove('animate-slow-pulse');
+                                  setFieldAnimationActive(prev => ({ ...prev, middleName: false }));
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value) {
+                                    setFieldAnimationActive(prev => ({ ...prev, middleName: false }));
+                                  }
+                                }}
+                              />
+                              {!field.value && (
+                                <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                  <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                  <span className="text-gray-500 dark:text-white/50 text-sm">
+                                    {animatedPlaceholders.middleName.displayedText}
+                                    {animatedPlaceholders.middleName.isTyping && <span className="animate-pulse">|</span>}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -543,13 +670,33 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                         <FormItem>
                           <FormLabel>Date of Birth</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="date" 
-                              className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert" 
-                              {...field} 
-                              data-testid="input-dob"
-                              onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                            />
+                            <div className="relative">
+                              <Input 
+                                type="date" 
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert" 
+                                {...field} 
+                                data-testid="input-dob"
+                                onFocus={(e) => {
+                                  e.currentTarget.classList.remove('animate-slow-pulse');
+                                  setFieldAnimationActive(prev => ({ ...prev, dob: false }));
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value) {
+                                    setFieldAnimationActive(prev => ({ ...prev, dob: false }));
+                                  }
+                                }}
+                              />
+                              {!field.value && (
+                                <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                  <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                  <span className="text-gray-500 dark:text-white/50 text-sm">
+                                    {animatedPlaceholders.dob.displayedText}
+                                    {animatedPlaceholders.dob.isTyping && <span className="animate-pulse">|</span>}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -571,7 +718,8 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                             <FormControl>
                               <SelectTrigger 
                                 data-testid="select-gender" 
-                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300 focus:ring-0 focus:ring-offset-0 [&[data-state=open]]:animate-none [&[data-state=open]]:bg-gradient-to-r [&[data-state=open]]:from-blue-600/50 [&[data-state=open]]:via-indigo-600/50 [&[data-state=open]]:to-purple-600/50"
+                                onFocus={(e) => e.currentTarget.classList.remove('animate-slow-pulse')}
                               >
                                 <SelectValue className="text-gray-900 dark:text-white" />
                               </SelectTrigger>
@@ -621,12 +769,32 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem>
                             <FormLabel>Phone Number</FormLabel>
                             <FormControl>
-                              <Input 
-                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
-                                {...field} 
-                                data-testid="input-phone"
-                                onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                              />
+                              <div className="relative">
+                                <Input 
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
+                                  {...field} 
+                                  data-testid="input-phone"
+                                  onFocus={(e) => {
+                                    e.currentTarget.classList.remove('animate-slow-pulse');
+                                    setFieldAnimationActive(prev => ({ ...prev, phone: false }));
+                                  }}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    if (e.target.value) {
+                                      setFieldAnimationActive(prev => ({ ...prev, phone: false }));
+                                    }
+                                  }}
+                                />
+                                {!field.value && (
+                                  <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                    <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                    <span className="text-gray-500 dark:text-white/50 text-sm">
+                                      {animatedPlaceholders.phone.displayedText}
+                                      {animatedPlaceholders.phone.isTyping && <span className="animate-pulse">|</span>}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -640,13 +808,33 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem className="md:col-span-2">
                             <FormLabel>Email Address (Optional)</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="email" 
-                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
-                                {...field} 
-                                data-testid="input-email"
-                                onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                              />
+                              <div className="relative">
+                                <Input 
+                                  type="email" 
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300" 
+                                  {...field} 
+                                  data-testid="input-email"
+                                  onFocus={(e) => {
+                                    e.currentTarget.classList.remove('animate-slow-pulse');
+                                    setFieldAnimationActive(prev => ({ ...prev, email: false }));
+                                  }}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    if (e.target.value) {
+                                      setFieldAnimationActive(prev => ({ ...prev, email: false }));
+                                    }
+                                  }}
+                                />
+                                {!field.value && (
+                                  <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                    <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                    <span className="text-gray-500 dark:text-white/50 text-sm">
+                                      {animatedPlaceholders.email.displayedText}
+                                      {animatedPlaceholders.email.isTyping && <span className="animate-pulse">|</span>}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -660,20 +848,34 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           <FormItem className="md:col-span-2">
                             <FormLabel>National Identification Number (NIN) (Optional)</FormLabel>
                             <FormControl>
-                              <Input 
-                                maxLength={11}
-                                className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/50 border-0 animate-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300"
-                                {...field} 
-                                data-testid="input-nin"
-                                onFocus={(e) => e.currentTarget.classList.remove('animate-pulse')}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '');
-                                  field.onChange(value);
-                                  if (value) {
-                                    e.currentTarget.classList.remove('animate-pulse');
-                                  }
-                                }}
-                              />
+                              <div className="relative">
+                                <Input 
+                                  maxLength={11}
+                                  className="bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 text-gray-900 dark:text-white border-0 animate-slow-pulse focus:animate-none focus:bg-gradient-to-r focus:from-blue-600/50 focus:via-indigo-600/50 focus:to-purple-600/50 transition-all duration-300"
+                                  {...field} 
+                                  data-testid="input-nin"
+                                  onFocus={(e) => {
+                                    e.currentTarget.classList.remove('animate-slow-pulse');
+                                    setFieldAnimationActive(prev => ({ ...prev, nin: false }));
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    field.onChange(value);
+                                    if (value) {
+                                      setFieldAnimationActive(prev => ({ ...prev, nin: false }));
+                                    }
+                                  }}
+                                />
+                                {!field.value && (
+                                  <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
+                                    <Pen className="h-4 w-4 text-gray-500 dark:text-white/50 mr-2 animate-slow-pulse" />
+                                    <span className="text-gray-500 dark:text-white/50 text-sm">
+                                      {animatedPlaceholders.nin.displayedText}
+                                      {animatedPlaceholders.nin.isTyping && <span className="animate-pulse">|</span>}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>

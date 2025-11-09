@@ -719,7 +719,7 @@ export function AdminDashboard() {
       {/* Bulk Delete Controls */}
       <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <CardTitle className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-2 sm:gap-3">
               <Trash className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-base sm:text-xl">🗑️ Bulk Delete Operations</span>

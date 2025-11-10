@@ -1149,21 +1149,23 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                                         }`}></span>
                                         <strong>
                                           {(() => {
-                                            // Check if roomNumber already includes wing (range format like "A204", "RA1")
-                                            // vs standard format where roomNumber is just "204" and wing is separate "A"
+                                            // For range format rooms, display as "A402" (wing + number combined)
+                                            // For standard format rooms, display as "402 (Wing A)"
                                             const roomNumStr = room.roomNumber.toString();
                                             const wingStr = room.wing.toString();
                                             
-                                            // Check if roomNumber starts with letters (range format)
-                                            // Range format rooms have the wing prefix in the roomNumber (e.g., "A402", "RA1")
-                                            const hasLetterPrefix = /^[A-Za-z&]+/.test(roomNumStr);
+                                            // Check if roomNumber is just numbers (range format stores numbers separately)
+                                            // Range format: roomNumber is "402", wing is "A" -> display as "A402"
+                                            // Standard format: roomNumber is "402", wing is "A" -> display as "402 (Wing A)"
+                                            // We need to distinguish: if wing exists and roomNumber is numeric, it's range format
+                                            const isNumericOnly = /^\d+$/.test(roomNumStr);
                                             
-                                            if (hasLetterPrefix) {
-                                              // Range format: roomNumber already includes wing (e.g., "A402")
-                                              return roomNumStr; // Display as "A402", "RA1", etc.
+                                            if (isNumericOnly && wingStr) {
+                                              // Range format: combine wing + number for display (e.g., "A402")
+                                              return `${wingStr}${roomNumStr}`;
                                             } else {
-                                              // Standard format: roomNumber is just number, wing is separate
-                                              return `${roomNumStr} (Wing ${wingStr})`; // Display as "402 (Wing A)"
+                                              // Standard format: display as "402 (Wing A)"
+                                              return `${roomNumStr} (Wing ${wingStr})`;
                                             }
                                           })()}
                                         </strong>

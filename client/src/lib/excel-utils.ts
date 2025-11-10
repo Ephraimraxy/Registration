@@ -133,19 +133,37 @@ function parseRoomRange(rangeStr: string, gender: 'Male' | 'Female', bedsPerRoom
   
   // Handle special cases like "D&D 120"
   if (!trimmed.includes('-')) {
-    // Single room
-    const roomNumber = trimmed;
-    const roomWing = wing || roomNumber.replace(/\d+/, '').trim() || 'A';
-    const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
-    
-    rooms.push({
-      wing: roomWing,
-      roomNumber: roomNumber,
-      gender: gender,
-      totalBeds: bedsPerRoom,
-      availableBeds: bedsPerRoom,
-      bedNumbers: bedNumbers,
-    });
+    // Single room - extract wing and number separately
+    const roomMatch = trimmed.match(/^([A-Za-z&]+)?(\d+)$/);
+    if (roomMatch) {
+      const roomPrefix = roomMatch[1] || '';
+      const roomNum = roomMatch[2] || '';
+      const roomWing = wing || roomPrefix || 'A';
+      const roomNumber = roomNum; // Store as just the number
+      const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
+      
+      rooms.push({
+        wing: roomWing,
+        roomNumber: roomNumber,
+        gender: gender,
+        totalBeds: bedsPerRoom,
+        availableBeds: bedsPerRoom,
+        bedNumbers: bedNumbers,
+      });
+    } else {
+      // Fallback: treat entire string as room number if no match
+      const roomWing = wing || 'A';
+      const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
+      
+      rooms.push({
+        wing: roomWing,
+        roomNumber: trimmed,
+        gender: gender,
+        totalBeds: bedsPerRoom,
+        availableBeds: bedsPerRoom,
+        bedNumbers: bedNumbers,
+      });
+    }
     return rooms;
   }
   
@@ -175,12 +193,14 @@ function parseRoomRange(rangeStr: string, gender: 'Male' | 'Female', bedsPerRoom
     throw new Error(`Invalid room range numbers: ${rangeStr}`);
   }
   
-  // Determine wing
+  // Determine wing - extract from prefix or use provided wing
   const roomWing = wing || startPrefix || 'A';
   
   // Generate rooms in range
+  // For range format, store roomNumber as just the number (without wing prefix)
+  // The wing is stored separately, and they'll be combined in display
   for (let i = startNum; i <= endNum; i++) {
-    const roomNumber = startPrefix ? `${startPrefix}${i}` : i.toString();
+    const roomNumber = i.toString(); // Store as just the number (e.g., "402" not "A402")
     const bedNumbers = generateDefaultBedNumbers(bedsPerRoom);
     
     rooms.push({
@@ -478,6 +498,18 @@ export function parseUsersExcel(file: File): Promise<InsertUser[]> {
 
 export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' | 'custom' = 'full', selectedColumns?: string[]): void {
   try {
+    // Sort users by tag number serially (TAG-001, TAG-002, etc.)
+    const sortedUsers = [...users].sort((a, b) => {
+      const tagA = a.tagNumber || '';
+      const tagB = b.tagNumber || '';
+      
+      // Extract numeric part from tag numbers for proper sorting
+      const numA = parseInt(tagA.replace(/\D/g, '')) || 0;
+      const numB = parseInt(tagB.replace(/\D/g, '')) || 0;
+      
+      return numA - numB;
+    });
+    
     let exportData;
     
     if (exportType === 'custom' && selectedColumns) {
@@ -505,7 +537,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
         'Registration Date': (user) => user.createdAt ? (user.createdAt.toDate ? user.createdAt.toDate().toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()) : '',
       };
 
-      exportData = users.map(user => {
+      exportData = sortedUsers.map(user => {
         const row: Record<string, string> = {};
         selectedColumns.forEach(col => {
           if (columnMap[col]) {
@@ -516,7 +548,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
       });
     } else if (exportType === 'summary') {
       // Summary format - only essential fields
-      exportData = users.map(user => ({
+      exportData = sortedUsers.map(user => ({
         'Name': `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim(),
         'Gender': user.gender || '',
         'Room Number': user.roomNumber || 'Not assigned',
@@ -528,7 +560,7 @@ export function exportUsersToExcel(users: any[], exportType: 'full' | 'summary' 
       }));
     } else {
       // Full format - all fields
-      exportData = users.map(user => ({
+      exportData = sortedUsers.map(user => ({
         'First Name': user.firstName || '',
         'Middle Name': user.middleName || '',
         'Surname': user.surname || '',

@@ -93,6 +93,18 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
     if (!users || users.length === 0) {
       throw new Error('No users data available for export');
     }
+    
+    // Sort users by tag number serially (TAG-001, TAG-002, etc.)
+    const sortedUsers = [...users].sort((a, b) => {
+      const tagA = a.tagNumber || '';
+      const tagB = b.tagNumber || '';
+      
+      // Extract numeric part from tag numbers for proper sorting
+      const numA = parseInt(tagA.replace(/\D/g, '')) || 0;
+      const numB = parseInt(tagB.replace(/\D/g, '')) || 0;
+      
+      return numA - numB;
+    });
 
     const doc = new jsPDF('landscape', 'mm', 'a4');
     

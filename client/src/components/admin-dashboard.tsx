@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare, ClipboardCheck } from "lucide-react";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare, ClipboardCheck, Tag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -61,6 +61,7 @@ export function AdminDashboard() {
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [genderFilter, setGenderFilter] = useState("all");
   const [wingFilter, setWingFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
@@ -263,27 +264,37 @@ export function AdminDashboard() {
     let filtered = [...users];
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase().trim();
-      
-      // Normalize tag number search - handle both "005" and "TAG-005" formats
-      const normalizeTagNumber = (tagNum: string | undefined): string => {
-        if (!tagNum) return '';
-        // Remove "TAG-" prefix if present and convert to lowercase
-        return tagNum.replace(/^tag-/i, '').toLowerCase();
-      };
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.firstName.toLowerCase().includes(query) ||
+        user.surname.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query) ||
+        user.phone.includes(query)
+      );
+    }
+
+    // Filter by tag number (accepts formats like "005" or "TAG-005")
+    if (tagSearchQuery) {
+      const tagQuery = tagSearchQuery.trim().toUpperCase();
+      // Normalize the search query - remove "TAG-" prefix if present, pad with zeros
+      let normalizedTagQuery = tagQuery;
+      if (normalizedTagQuery.startsWith("TAG-")) {
+        normalizedTagQuery = normalizedTagQuery.replace("TAG-", "");
+      }
+      // Pad with zeros if it's just numbers (e.g., "5" -> "005")
+      if (/^\d+$/.test(normalizedTagQuery)) {
+        normalizedTagQuery = normalizedTagQuery.padStart(3, "0");
+      }
       
       filtered = filtered.filter(user => {
-        const firstNameMatch = user.firstName.toLowerCase().includes(query);
-        const surnameMatch = user.surname.toLowerCase().includes(query);
-        const emailMatch = user.email?.toLowerCase().includes(query) || false;
-        const phoneMatch = user.phone.includes(query);
-        
-        // Tag number search - normalize both search query and user tag number
-        const normalizedQuery = normalizeTagNumber(query);
-        const normalizedUserTag = normalizeTagNumber(user.tagNumber);
-        const tagMatch = normalizedUserTag && normalizedUserTag.includes(normalizedQuery);
-        
-        return firstNameMatch || surnameMatch || emailMatch || phoneMatch || tagMatch;
+        if (!user.tagNumber) return false;
+        const userTag = user.tagNumber.toUpperCase();
+        // Check if tag matches in various formats
+        return userTag === tagQuery || 
+               userTag === `TAG-${normalizedTagQuery}` ||
+               userTag === normalizedTagQuery ||
+               userTag.includes(tagQuery) ||
+               userTag.includes(normalizedTagQuery);
       });
     }
 
@@ -300,7 +311,7 @@ export function AdminDashboard() {
     }
 
     setFilteredUsers(filtered);
-  }, [users, searchQuery, genderFilter, wingFilter, stateFilter]);
+  }, [users, searchQuery, tagSearchQuery, genderFilter, wingFilter, stateFilter]);
 
   const handleUpload = (type: 'rooms' | 'tags' | 'users') => {
     setUploadType(type);
@@ -560,6 +571,7 @@ export function AdminDashboard() {
 
   const resetFilters = () => {
     setSearchQuery("");
+    setTagSearchQuery("");
     setGenderFilter("all");
     setWingFilter("all");
     setStateFilter("all");
@@ -1006,10 +1018,21 @@ export function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <Input
-                placeholder="Search users by name, email, phone, or tag number (e.g., 005 or TAG-005)..."
+                placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="input-search"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by Tag Number (e.g., 005 or TAG-005)"
+                value={tagSearchQuery}
+                onChange={(e) => setTagSearchQuery(e.target.value)}
+                data-testid="input-tag-search"
+                className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
               />
             </div>
             
@@ -1116,12 +1139,17 @@ export function AdminDashboard() {
             </Select>
           </div>
           
-          {(searchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
+          {(searchQuery || tagSearchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <span className="text-xs sm:text-sm text-muted-foreground w-full sm:w-auto">Active filters:</span>
               {searchQuery && (
                 <Badge key="search" variant="secondary" className="text-xs">
                   Search: {searchQuery}
+                </Badge>
+              )}
+              {tagSearchQuery && (
+                <Badge key="tag-search" variant="secondary" className="text-xs">
+                  Tag: {tagSearchQuery}
                 </Badge>
               )}
               {genderFilter && genderFilter !== "all" && (

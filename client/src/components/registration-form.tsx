@@ -971,9 +971,9 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                           </FormLabel>
                           <Select 
                             onValueChange={(value) => {
-                              field.onChange(value);
-                              setSelectedState(value);
-                              form.setValue("lga", ""); // Reset LGA when state changes
+                            field.onChange(value);
+                            setSelectedState(value);
+                            form.setValue("lga", ""); // Reset LGA when state changes
                             }} 
                             value={field.value}
                             disabled={defaultState?.isActive === true}
@@ -1370,7 +1370,7 @@ export function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
                 {/* Navigation Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-6 border-t">
-                  <Button
+                  <Button 
                     type="button"
                     variant="outline"
                     onClick={handleBack}

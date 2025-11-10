@@ -118,7 +118,7 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
     const reportType = exportType === 'summary' ? 'Summary' : 'Complete';
-    doc.text(`${reportType} Users Registration Report (${users.length} users)`, 20, 30);
+    doc.text(`${reportType} Users Registration Report (${sortedUsers.length} users)`, 20, 30);
     
     // Helper function to safely format dates
     const formatDate = (date: any): string => {
@@ -136,7 +136,7 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
     
     if (exportType === 'summary') {
       // Summary format - only essential fields
-      tableData = users.map((user, index) => [
+      tableData = sortedUsers.map((user, index) => [
         index + 1,
         `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
         user.gender || 'Not provided',
@@ -150,7 +150,7 @@ export function exportUsersToPDF(users: User[], exportType: 'full' | 'summary' =
       tableHeaders = [['#', 'Name', 'Gender', 'Room', 'Tag', 'State', 'Phone', 'Email', 'Specialization']];
     } else {
       // Full format - all fields
-      tableData = users.map((user, index) => [
+      tableData = sortedUsers.map((user, index) => [
         index + 1,
         `${user.firstName || ''} ${user.middleName || ''} ${user.surname || ''}`.trim() || 'Not provided',
         user.gender || 'Not provided',

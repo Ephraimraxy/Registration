@@ -263,13 +263,28 @@ export function AdminDashboard() {
     let filtered = [...users];
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(user =>
-        user.firstName.toLowerCase().includes(query) ||
-        user.surname.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.phone.includes(query)
-      );
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Normalize tag number search - handle both "005" and "TAG-005" formats
+      const normalizeTagNumber = (tagNum: string | undefined): string => {
+        if (!tagNum) return '';
+        // Remove "TAG-" prefix if present and convert to lowercase
+        return tagNum.replace(/^tag-/i, '').toLowerCase();
+      };
+      
+      filtered = filtered.filter(user => {
+        const firstNameMatch = user.firstName.toLowerCase().includes(query);
+        const surnameMatch = user.surname.toLowerCase().includes(query);
+        const emailMatch = user.email?.toLowerCase().includes(query) || false;
+        const phoneMatch = user.phone.includes(query);
+        
+        // Tag number search - normalize both search query and user tag number
+        const normalizedQuery = normalizeTagNumber(query);
+        const normalizedUserTag = normalizeTagNumber(user.tagNumber);
+        const tagMatch = normalizedUserTag && normalizedUserTag.includes(normalizedQuery);
+        
+        return firstNameMatch || surnameMatch || emailMatch || phoneMatch || tagMatch;
+      });
     }
 
     if (genderFilter && genderFilter !== "all") {
@@ -991,7 +1006,7 @@ export function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <Input
-                placeholder="Search users..."
+                placeholder="Search users by name, email, phone, or tag number (e.g., 005 or TAG-005)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="input-search"

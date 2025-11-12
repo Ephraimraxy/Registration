@@ -20,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/admin" component={ProtectedAdminRoute} />
       <Route path="/admin/:rest*" component={ProtectedAdminRoute} />
       <Route path="/user-details" component={() => <UserDetailsPage user={JSON.parse(localStorage.getItem('viewingUser') || '{}')} onBack={() => window.history.back()} />} />
       <Route path="/profile/:token">

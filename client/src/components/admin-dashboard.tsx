@@ -430,7 +430,20 @@ export function AdminDashboard() {
       ...doc.data(),
     })) as TagType[];
     
-    const availableTags = currentTags.filter(tag => !tag.isAssigned);
+    // Cross-reference with users to ensure tags are truly available
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const currentUsers = usersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as User[];
+    
+    const availableTags = currentTags.filter(tag => {
+      if (tag.isAssigned) return false;
+      // Check if any user has this tag assigned
+      return !currentUsers.some(user => 
+        user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+      );
+    });
     console.log("Current tags in database:", currentTags.length);
     console.log("Available tags:", availableTags.length);
     
@@ -630,10 +643,24 @@ export function AdminDashboard() {
   });
   
   // Filter available tags for modal
+  // A tag is truly available only if:
+  // 1. tag.isAssigned is false, AND
+  // 2. No user in the users table has this tagNumber assigned
   const availableTagsForModal = tags.filter(tag => {
     const matchesSearch = !tagsSearchQuery || 
       tag.tagNumber.toLowerCase().includes(tagsSearchQuery.toLowerCase());
-    return matchesSearch && !tag.isAssigned;
+    
+    // Check if tag is marked as assigned
+    if (tag.isAssigned) {
+      return false;
+    }
+    
+    // Cross-reference with users table to ensure no user has this tag
+    const isAssignedToUser = users.some(user => 
+      user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+    );
+    
+    return matchesSearch && !isAssignedToUser;
   }).sort((a, b) => {
     // Sort by tag number
     const aNum = parseInt(a.tagNumber.replace(/\D/g, '')) || 0;
@@ -708,11 +735,11 @@ export function AdminDashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        {/* Header */}
+      {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
           <p className="text-sm sm:text-base text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
-        </div>
+      </div>
 
         {/* Main Tabs Navigation */}
         <Tabs defaultValue="overview" className="w-full">
@@ -748,7 +775,7 @@ export function AdminDashboard() {
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Total Users Card */}
+      {/* Total Users Card */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -774,7 +801,7 @@ export function AdminDashboard() {
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="stat-male-users">
                   {maleCount}
                 </p>
-              </div>
+      </div>
               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
@@ -801,16 +828,16 @@ export function AdminDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <Card>
-              <CardHeader>
+      <Card>
+        <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
+        </CardHeader>
+        <CardContent>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
-                  <Button onClick={() => setLocation('/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <Building className="mr-2 h-4 w-4" />
-                    🏠 View Rooms & Tags Details
-                  </Button>
+            <Button onClick={() => setLocation('/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Building className="mr-2 h-4 w-4" />
+              🏠 View Rooms & Tags Details
+            </Button>
                   <Button onClick={() => setShowRoomsTagsModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                     <Building className="mr-2 h-4 w-4" />
                     📋 Quick View: Rooms & Tags
@@ -1036,14 +1063,14 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
-                  <Button onClick={() => handleUpload('rooms')} data-testid="button-upload-rooms">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Rooms (Excel)
-                  </Button>
-                  <Button onClick={() => handleUpload('tags')} data-testid="button-upload-tags">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Tags (Excel)
-                  </Button>
+            <Button onClick={() => handleUpload('rooms')} data-testid="button-upload-rooms">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Rooms (Excel)
+            </Button>
+            <Button onClick={() => handleUpload('tags')} data-testid="button-upload-tags">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Tags (Excel)
+            </Button>
                   <Button onClick={() => handleUpload('users')} data-testid="button-upload-users" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Users (Excel)
@@ -1058,35 +1085,35 @@ export function AdminDashboard() {
                 <CardTitle>Data Export</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-4">
-                  {/* Export Format Selection */}
+            <div className="flex flex-col gap-4">
+              {/* Export Format Selection */}
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
-                      <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
-                        <SelectValue className="text-gray-900 dark:text-gray-100" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                        <SelectItem value="excel" className="hover:bg-green-50 dark:hover:bg-green-900/30 focus:bg-green-100 dark:focus:bg-green-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"></span>
-                            📊 Excel
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="pdf" className="hover:bg-red-50 dark:hover:bg-red-900/30 focus:bg-red-100 dark:focus:bg-red-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-600 shadow-sm"></span>
-                            📄 PDF
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
+                  <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
+                    <SelectValue className="text-gray-900 dark:text-gray-100" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                    <SelectItem value="excel" className="hover:bg-green-50 dark:hover:bg-green-900/30 focus:bg-green-100 dark:focus:bg-green-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"></span>
+                        📊 Excel
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="pdf" className="hover:bg-red-50 dark:hover:bg-red-900/30 focus:bg-red-100 dark:focus:bg-red-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-600 shadow-sm"></span>
+                        📄 PDF
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="secondary" data-testid="button-export-users">
-                          <Download className="mr-2 h-4 w-4" />
-                          Export Users
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Users
                           <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
+                </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
                         <DropdownMenuItem onClick={handleFullExport} className="cursor-pointer">
@@ -1099,195 +1126,210 @@ export function AdminDashboard() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
-                  
-                  {/* Export Type Tabs */}
-                  <div className="flex justify-center">
+              </div>
+              
+              {/* Export Type Tabs */}
+              <div className="flex justify-center">
                     <Tabs value={exportType} onValueChange={(value) => setExportType(value as 'full' | 'summary' | 'custom')} className="w-full max-w-md">
                       <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                         <TabsTrigger value="full" className="flex items-center gap-2 text-xs sm:text-sm">
                           <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="hidden sm:inline">Full</span>
                           <span className="sm:hidden">All</span>
-                        </TabsTrigger>
+                    </TabsTrigger>
                         <TabsTrigger value="summary" className="flex items-center gap-2 text-xs sm:text-sm">
                           <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                          Summary
-                        </TabsTrigger>
+                      Summary
+                    </TabsTrigger>
                         <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
                           <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4" />
                           Custom
                         </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </TabsList>
+                </Tabs>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Bulk Delete Controls */}
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
-              <CardHeader>
+      {/* Bulk Delete Controls */}
+      <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
+        <CardHeader>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <CardTitle className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-2 sm:gap-3">
                     <Trash className="h-5 w-5 sm:h-6 sm:w-6" />
                     <span className="text-base sm:text-xl">🗑️ Bulk Delete Operations</span>
-                  </CardTitle>
+            </CardTitle>
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={refreshData}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
                       className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Refresh Data
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowClearDataDialog(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowClearDataDialog(true)}
                       className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
-                    >
-                      <Trash className="h-4 w-4 mr-2" />
-                      Clear All Data
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Clear All Data
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Delete Available Tags */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Tags</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {tags.filter(tag => !tag.isAssigned).length} available tags
-                        </p>
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            disabled={bulkDeleteStatus === 'processing' || tags.filter(tag => !tag.isAssigned).length === 0}
-                          >
-                            {bulkDeleteStatus === 'processing' && bulkDeleteType === 'tags' ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                              <Trash className="h-4 w-4 mr-2" />
-                            )}
-                            Delete All Available Tags
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                              <Trash className="h-5 w-5" />
-                              Delete All Available Tags
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="text-red-700 dark:text-red-300">
-                              Are you sure you want to delete all {tags.filter(tag => !tag.isAssigned).length} available tags? 
-                              This action cannot be undone and will permanently remove these tags from the system.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={handleBulkDeleteTags}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              <Trash className="h-4 w-4 mr-2" />
-                              Delete All Available Tags
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-
-                  {/* Delete Available Rooms */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Rooms</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {rooms.filter(room => room.availableBeds > 0).length} available rooms
-                        </p>
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            disabled={bulkDeleteStatus === 'processing' || rooms.filter(room => room.availableBeds > 0).length === 0}
-                          >
-                            {bulkDeleteStatus === 'processing' && bulkDeleteType === 'rooms' ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                              <Trash className="h-4 w-4 mr-2" />
-                            )}
-                            Delete All Available Rooms
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                              <Trash className="h-5 w-5" />
-                              Delete All Available Rooms
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="text-red-700 dark:text-red-300">
-                              Are you sure you want to delete all {rooms.filter(room => room.availableBeds > 0).length} available rooms? 
-                              This action cannot be undone and will permanently remove these rooms from the system.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={handleBulkDeleteRooms}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              <Trash className="h-4 w-4 mr-2" />
-                              Delete All Available Rooms
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
+            {/* Delete Available Tags */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Tags</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {tags.filter(tag => {
+                            if (tag.isAssigned) return false;
+                            return !users.some(user => 
+                              user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                            );
+                          }).length} available tags
+                  </p>
                 </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                            disabled={bulkDeleteStatus === 'processing' || tags.filter(tag => {
+                              if (tag.isAssigned) return false;
+                              return !users.some(user => 
+                                user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                              );
+                            }).length === 0}
+                    >
+                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'tags' ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 mr-2" />
+                      )}
+                      Delete All Available Tags
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
+                        <Trash className="h-5 w-5" />
+                        Delete All Available Tags
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
+                              Are you sure you want to delete all {tags.filter(tag => {
+                                if (tag.isAssigned) return false;
+                                return !users.some(user => 
+                                  user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                                );
+                              }).length} available tags?
+                        This action cannot be undone and will permanently remove these tags from the system.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleBulkDeleteTags}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete All Available Tags
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
 
-                {/* Progress Indicator */}
-                {bulkDeleteStatus === 'processing' && (
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">
-                        Deleting {bulkDeleteType}...
-                      </span>
-                      <span className="text-muted-foreground">
-                        {bulkDeleteCount} items processed
-                      </span>
-                    </div>
-                    <Progress value={bulkDeleteProgress} className="h-3" />
-                  </div>
-                )}
+            {/* Delete Available Rooms */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Rooms</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {rooms.filter(room => room.availableBeds > 0).length} available rooms
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={bulkDeleteStatus === 'processing' || rooms.filter(room => room.availableBeds > 0).length === 0}
+                    >
+                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'rooms' ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 mr-2" />
+                      )}
+                      Delete All Available Rooms
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
+                        <Trash className="h-5 w-5" />
+                        Delete All Available Rooms
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
+                        Are you sure you want to delete all {rooms.filter(room => room.availableBeds > 0).length} available rooms? 
+                        This action cannot be undone and will permanently remove these rooms from the system.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleBulkDeleteRooms}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete All Available Rooms
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </div>
 
-                {bulkDeleteStatus === 'success' && (
-                  <div className="mt-6 flex items-center gap-2 text-green-600 dark:text-green-400">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="font-medium">Bulk delete completed successfully!</span>
-                  </div>
-                )}
+          {/* Progress Indicator */}
+          {bulkDeleteStatus === 'processing' && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  Deleting {bulkDeleteType}...
+                </span>
+                <span className="text-muted-foreground">
+                  {bulkDeleteCount} items processed
+                </span>
+              </div>
+              <Progress value={bulkDeleteProgress} className="h-3" />
+            </div>
+          )}
 
-                {bulkDeleteStatus === 'error' && (
-                  <div className="mt-6 flex items-center gap-2 text-red-600 dark:text-red-400">
-                    <AlertCircle className="h-5 w-5" />
-                    <span className="font-medium">Bulk delete failed. Please try again.</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {bulkDeleteStatus === 'success' && (
+            <div className="mt-6 flex items-center gap-2 text-green-600 dark:text-green-400">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Bulk delete completed successfully!</span>
+            </div>
+          )}
+
+          {bulkDeleteStatus === 'error' && (
+            <div className="mt-6 flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Bulk delete failed. Please try again.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
           </TabsContent>
         </Tabs>
 
@@ -1313,8 +1355,8 @@ export function AdminDashboard() {
                   onClick={() => setSelectedColumns([])}
                 >
                   Deselect All
-                </Button>
-              </div>
+            </Button>
+          </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {availableColumns.map((column) => (
                   <div key={column} className="flex items-center space-x-2">
@@ -1339,7 +1381,7 @@ export function AdminDashboard() {
                     </label>
                   </div>
                 ))}
-              </div>
+          </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowCustomExportDialog(false)}>
                   Cancel
@@ -1348,7 +1390,7 @@ export function AdminDashboard() {
                   <Download className="mr-2 h-4 w-4" />
                   Export Selected ({selectedColumns.length})
                 </Button>
-              </div>
+            </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1430,7 +1472,7 @@ export function AdminDashboard() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+        </div>
               
               {/* Rooms List */}
               <div className="border rounded-lg max-h-[500px] overflow-y-auto">

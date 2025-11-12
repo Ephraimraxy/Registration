@@ -20,7 +20,7 @@ const editUserSchema = z.object({
   middleName: z.string().optional(),
   gender: z.enum(["Male", "Female"]),
   phone: z.string().min(10, "Valid phone number is required"),
-  email: z.string().email("Valid email is required"),
+  email: z.union([z.string().email("Valid email is required"), z.literal("")]).optional(),
   roomNumber: z.string().optional(),
   tagNumber: z.string().optional(),
 });
@@ -46,7 +46,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
       middleName: user.middleName || "",
       gender: user.gender,
       phone: user.phone,
-      email: user.email,
+      email: user.email || "",
       roomNumber: user.roomNumber || "",
       tagNumber: user.tagNumber || "",
     },
@@ -116,7 +116,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
             middleName: data.middleName || null,
             gender: data.gender,
             phone: data.phone,
-            email: data.email,
+            email: data.email || null,
             roomNumber: newRoomNumber,
             tagNumber: data.tagNumber || user.tagNumber,
           });
@@ -135,7 +135,7 @@ export function EditStudentModal({ user, onClose }: EditStudentModalProps) {
           middleName: data.middleName || null,
           gender: data.gender,
           phone: data.phone,
-          email: data.email,
+          email: data.email || null,
           roomNumber: data.roomNumber || user.roomNumber,
           tagNumber: data.tagNumber || user.tagNumber,
         });

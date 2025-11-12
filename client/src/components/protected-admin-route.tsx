@@ -68,7 +68,7 @@ export function ProtectedAdminRoute() {
   return (
     <Switch>
       <Route path="/admin/rooms-tags">
-        <RoomsTagsDetailPage onBack={() => window.history.back()} />
+        <RoomsTagsDetailPage onBack={() => setLocation('/admin')} />
       </Route>
       <Route path="/admin">
         <AdminDashboard />

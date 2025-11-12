@@ -836,324 +836,175 @@ export function AdminDashboard() {
                     <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                     <span className="text-base sm:text-xl">Filters & Search</span>
                   </CardTitle>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refreshData}
-                className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowClearDataDialog(true)}
-                className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                Clear All Data
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            {/* Delete Available Tags */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Tags</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {tags.filter(tag => !tag.isAssigned).length} available tags
-                  </p>
+                  <Button variant="outline" size="sm" onClick={resetFilters} data-testid="button-reset-filters" className="w-full sm:w-auto">
+                    Reset Filters
+                  </Button>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      disabled={bulkDeleteStatus === 'processing' || tags.filter(tag => !tag.isAssigned).length === 0}
-                    >
-                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'tags' ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Trash className="h-4 w-4 mr-2" />
-                      )}
-                      Delete All Available Tags
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                        <Trash className="h-5 w-5" />
-                        Delete All Available Tags
-                      </AlertDialogTitle>
-                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
-                        Are you sure you want to delete all {tags.filter(tag => !tag.isAssigned).length} available tags? 
-                        This action cannot be undone and will permanently remove these tags from the system.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleBulkDeleteTags}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Delete All Available Tags
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-
-            {/* Delete Available Rooms */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Rooms</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {rooms.filter(room => room.availableBeds > 0).length} available rooms
-                  </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div>
+                    <Input
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      data-testid="input-search"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by Tag Number (e.g., 005 or TAG-005)"
+                      value={tagSearchQuery}
+                      onChange={(e) => setTagSearchQuery(e.target.value)}
+                      data-testid="input-tag-search"
+                      className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                    />
+                  </div>
+                  
+                  <Select value={genderFilter} onValueChange={setGenderFilter}>
+                    <SelectTrigger data-testid="select-gender-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All Genders" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All Genders
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Male" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm"></span>
+                          👨 Male
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Female" className="hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 shadow-sm"></span>
+                          👩 Female
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={wingFilter} onValueChange={setWingFilter}>
+                    <SelectTrigger data-testid="select-wing-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All Wings" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All Wings
+                        </span>
+                      </SelectItem>
+                      {uniqueWings?.filter(Boolean).map((wing, index) => (
+                        <SelectItem 
+                          key={wing} 
+                          value={wing}
+                          className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                            index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                            index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                            index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                            'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <span className={`w-3 h-3 rounded-full shadow-sm ${
+                              index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                              index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                              index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                              'bg-gradient-to-r from-blue-500 to-blue-600'
+                            }`}></span>
+                            Wing {wing}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={stateFilter} onValueChange={setStateFilter}>
+                    <SelectTrigger data-testid="select-state-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All States" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All States
+                        </span>
+                      </SelectItem>
+                      {uniqueStates?.filter(Boolean).map((state, index) => (
+                        <SelectItem 
+                          key={state} 
+                          value={state}
+                          className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                            index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                            index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                            index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
+                            index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
+                            index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                            'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <span className={`w-3 h-3 rounded-full shadow-sm ${
+                              index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                              index % 6 === 1 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                              index % 6 === 2 ? 'bg-gradient-to-r from-violet-500 to-violet-600' :
+                              index % 6 === 3 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                              index % 6 === 4 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
+                              'bg-gradient-to-r from-indigo-500 to-indigo-600'
+                            }`}></span>
+                            {state}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      disabled={bulkDeleteStatus === 'processing' || rooms.filter(room => room.availableBeds > 0).length === 0}
-                    >
-                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'rooms' ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Trash className="h-4 w-4 mr-2" />
-                      )}
-                      Delete All Available Rooms
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
-                        <Trash className="h-5 w-5" />
-                        Delete All Available Rooms
-                      </AlertDialogTitle>
-                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
-                        Are you sure you want to delete all {rooms.filter(room => room.availableBeds > 0).length} available rooms? 
-                        This action cannot be undone and will permanently remove these rooms from the system.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleBulkDeleteRooms}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Delete All Available Rooms
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          </div>
+                
+                {(searchQuery || tagSearchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <span className="text-xs sm:text-sm text-muted-foreground w-full sm:w-auto">Active filters:</span>
+                    {searchQuery && (
+                      <Badge key="search" variant="secondary" className="text-xs">
+                        Search: {searchQuery}
+                      </Badge>
+                    )}
+                    {tagSearchQuery && (
+                      <Badge key="tag-search" variant="secondary" className="text-xs">
+                        Tag: {tagSearchQuery}
+                      </Badge>
+                    )}
+                    {genderFilter && genderFilter !== "all" && (
+                      <Badge key="gender" variant="secondary" className="text-xs">
+                        Gender: {genderFilter}
+                      </Badge>
+                    )}
+                    {wingFilter && wingFilter !== "all" && (
+                      <Badge key="wing" variant="secondary" className="text-xs">
+                        Wing: {wingFilter}
+                      </Badge>
+                    )}
+                    {stateFilter && stateFilter !== "all" && (
+                      <Badge key="state" variant="secondary" className="text-xs">
+                        State: {stateFilter}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Progress Indicator */}
-          {bulkDeleteStatus === 'processing' && (
-            <div className="mt-6 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
-                  Deleting {bulkDeleteType}...
-                </span>
-                <span className="text-muted-foreground">
-                  {bulkDeleteCount} items processed
-                </span>
-              </div>
-              <Progress value={bulkDeleteProgress} className="h-3" />
-            </div>
-          )}
-
-          {bulkDeleteStatus === 'success' && (
-            <div className="mt-6 flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Bulk delete completed successfully!</span>
-            </div>
-          )}
-
-          {bulkDeleteStatus === 'error' && (
-            <div className="mt-6 flex items-center gap-2 text-red-600 dark:text-red-400">
-              <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">Bulk delete failed. Please try again.</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-            <div>
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                data-testid="input-search"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by Tag Number (e.g., 005 or TAG-005)"
-                value={tagSearchQuery}
-                onChange={(e) => setTagSearchQuery(e.target.value)}
-                data-testid="input-tag-search"
-                className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-              />
-            </div>
-            
-            <Select value={genderFilter} onValueChange={setGenderFilter}>
-              <SelectTrigger data-testid="select-gender-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="All Genders" className="text-gray-900 dark:text-gray-100" />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                <SelectItem value="all" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
-                    All Genders
-                  </span>
-                </SelectItem>
-                <SelectItem value="Male" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm"></span>
-                    👨 Male
-                  </span>
-                </SelectItem>
-                <SelectItem value="Female" className="hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 shadow-sm"></span>
-                    👩 Female
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={wingFilter} onValueChange={setWingFilter}>
-              <SelectTrigger data-testid="select-wing-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="All Wings" className="text-gray-900 dark:text-gray-100" />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                <SelectItem value="all" className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
-                    All Wings
-                  </span>
-                </SelectItem>
-                {uniqueWings?.filter(Boolean).map((wing, index) => (
-                  <SelectItem 
-                    key={wing} 
-                    value={wing}
-                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                      index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                      index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
-                      index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
-                      'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <span className={`w-3 h-3 rounded-full shadow-sm ${
-                        index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                        index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
-                        index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
-                        'bg-gradient-to-r from-blue-500 to-blue-600'
-                      }`}></span>
-                      Wing {wing}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={stateFilter} onValueChange={setStateFilter}>
-              <SelectTrigger data-testid="select-state-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
-                <SelectValue placeholder="All States" className="text-gray-900 dark:text-gray-100" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
-                <SelectItem value="all" className="hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
-                    All States
-                  </span>
-                </SelectItem>
-                {uniqueStates?.filter(Boolean).map((state, index) => (
-                  <SelectItem 
-                    key={state} 
-                    value={state}
-                    className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
-                      index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
-                      index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
-                      index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
-                      index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
-                      index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
-                      'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <span className={`w-3 h-3 rounded-full shadow-sm ${
-                        index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                        index % 6 === 1 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                        index % 6 === 2 ? 'bg-gradient-to-r from-violet-500 to-violet-600' :
-                        index % 6 === 3 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
-                        index % 6 === 4 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
-                        'bg-gradient-to-r from-indigo-500 to-indigo-600'
-                      }`}></span>
-                      {state}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {(searchQuery || tagSearchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <span className="text-xs sm:text-sm text-muted-foreground w-full sm:w-auto">Active filters:</span>
-              {searchQuery && (
-                <Badge key="search" variant="secondary" className="text-xs">
-                  Search: {searchQuery}
-                </Badge>
-              )}
-              {tagSearchQuery && (
-                <Badge key="tag-search" variant="secondary" className="text-xs">
-                  Tag: {tagSearchQuery}
-                </Badge>
-              )}
-              {genderFilter && genderFilter !== "all" && (
-                <Badge key="gender" variant="secondary" className="text-xs">
-                  Gender: {genderFilter}
-                </Badge>
-              )}
-              {wingFilter && wingFilter !== "all" && (
-                <Badge key="wing" variant="secondary" className="text-xs">
-                  Wing: {wingFilter}
-                </Badge>
-              )}
-              {stateFilter && stateFilter !== "all" && (
-                <Badge key="state" variant="secondary" className="text-xs">
-                  State: {stateFilter}
-                </Badge>
-              )}
-            </div>
-          )}
-            </CardContent>
-          </Card>
-
-          {/* Students Table */}
-          <StudentTable 
-        users={filteredUsers} 
-            onEdit={handleEdit}
-            onViewDetails={handleViewDetails}
-          />
+            {/* Students Table */}
+            <StudentTable 
+              users={filteredUsers} 
+              onEdit={handleEdit}
+              onViewDetails={handleViewDetails}
+            />
           </TabsContent>
 
           {/* Settings Tab */}

@@ -205,7 +205,12 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Available Tags</p>
                   <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                    {tags.filter(tag => !tag.isAssigned).length}
+                    {tags.filter(tag => {
+                      // A tag is available only if it's not marked as assigned AND no user has it
+                      if (tag.isAssigned) return false;
+                      const userWithTag = getUserForTag(tag.tagNumber);
+                      return !userWithTag;
+                    }).length}
                   </p>
                 </div>
                 <Hash className="h-8 w-8 text-orange-600 dark:text-orange-400" />
@@ -357,6 +362,8 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {tags.map((tag) => {
                       const assignedUser = getUserForTag(tag.tagNumber);
+                      // Determine true assignment status: tag is assigned if either tag.isAssigned is true OR a user has this tag
+                      const isActuallyAssigned = tag.isAssigned || !!assignedUser;
                       
                       return (
                         <tr key={tag.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -372,12 +379,12 @@ export function RoomsTagsDetailPage({ onBack }: RoomsTagsDetailPageProps) {
                           </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-4 whitespace-nowrap">
                             <Badge 
-                              className={tag.isAssigned 
+                              className={isActuallyAssigned 
                                 ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
                                 : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
                               }
                             >
-                              {tag.isAssigned ? (
+                              {isActuallyAssigned ? (
                                 <>
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   Taken

@@ -1505,7 +1505,6 @@ export function AdminDashboard() {
           </Tabs>
         </DialogContent>
       </Dialog>
-        </Tabs>
       </div>
     </div>
   );

@@ -59,6 +59,13 @@ export function AdminDashboard() {
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
   const [isClearingData, setIsClearingData] = useState(false);
   
+  // Rooms & Tags Quick View Modal
+  const [showRoomsTagsModal, setShowRoomsTagsModal] = useState(false);
+  const [roomsSearchQuery, setRoomsSearchQuery] = useState("");
+  const [tagsSearchQuery, setTagsSearchQuery] = useState("");
+  const [roomsGenderFilter, setRoomsGenderFilter] = useState("all");
+  const [roomsWingFilter, setRoomsWingFilter] = useState("all");
+  
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [tagSearchQuery, setTagSearchQuery] = useState("");
@@ -605,6 +612,34 @@ export function AdminDashboard() {
 
   const uniqueStates = Array.from(new Set(users?.map(user => user.stateOfOrigin).filter(Boolean) ?? [])).sort();
   const uniqueWings = Array.from(new Set(rooms?.map(room => room.wing).filter(Boolean) ?? [])).sort();
+  
+  // Filter available rooms for modal
+  const availableRoomsForModal = rooms.filter(room => {
+    const matchesSearch = !roomsSearchQuery || 
+      room.roomNumber.toString().toLowerCase().includes(roomsSearchQuery.toLowerCase()) ||
+      room.wing.toLowerCase().includes(roomsSearchQuery.toLowerCase());
+    const matchesGender = roomsGenderFilter === "all" || room.gender === roomsGenderFilter;
+    const matchesWing = roomsWingFilter === "all" || room.wing === roomsWingFilter;
+    return matchesSearch && matchesGender && matchesWing && room.availableBeds > 0;
+  }).sort((a, b) => {
+    // Sort by wing, then by room number
+    if (a.wing !== b.wing) return a.wing.localeCompare(b.wing);
+    const aNum = parseInt(a.roomNumber.toString().replace(/\D/g, '')) || 0;
+    const bNum = parseInt(b.roomNumber.toString().replace(/\D/g, '')) || 0;
+    return aNum - bNum;
+  });
+  
+  // Filter available tags for modal
+  const availableTagsForModal = tags.filter(tag => {
+    const matchesSearch = !tagsSearchQuery || 
+      tag.tagNumber.toLowerCase().includes(tagsSearchQuery.toLowerCase());
+    return matchesSearch && !tag.isAssigned;
+  }).sort((a, b) => {
+    // Sort by tag number
+    const aNum = parseInt(a.tagNumber.replace(/\D/g, '')) || 0;
+    const bNum = parseInt(b.tagNumber.replace(/\D/g, '')) || 0;
+    return aNum - bNum;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
@@ -756,6 +791,10 @@ export function AdminDashboard() {
             <Button onClick={() => handleUpload('users')} data-testid="button-upload-users" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <Upload className="mr-2 h-4 w-4" />
               Upload Users (Excel)
+            </Button>
+            <Button onClick={() => setShowRoomsTagsModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Building className="mr-2 h-4 w-4" />
+              📋 Quick View: Rooms & Tags
             </Button>
             <div className="flex flex-col gap-3 sm:gap-4 w-full sm:w-auto">
               {/* Export Format Selection */}
@@ -1265,6 +1304,135 @@ export function AdminDashboard() {
         onConfirm={handleClearAllData}
         isLoading={isClearingData}
       />
+
+      {/* Rooms & Tags Quick View Modal */}
+      <Dialog open={showRoomsTagsModal} onOpenChange={setShowRoomsTagsModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-900 flex items-center gap-2">
+              <Building className="h-6 w-6" />
+              Quick View: Available Rooms & Tags
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Tabs defaultValue="rooms" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="rooms" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Available Rooms ({availableRoomsForModal.length})
+              </TabsTrigger>
+              <TabsTrigger value="tags" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Available Tags ({availableTagsForModal.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Rooms Tab */}
+            <TabsContent value="rooms" className="space-y-4">
+              {/* Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  placeholder="Search rooms by number or wing..."
+                  value={roomsSearchQuery}
+                  onChange={(e) => setRoomsSearchQuery(e.target.value)}
+                  className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400"
+                />
+                <Select value={roomsGenderFilter} onValueChange={setRoomsGenderFilter}>
+                  <SelectTrigger className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400">
+                    <SelectValue placeholder="All Genders" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={roomsWingFilter} onValueChange={setRoomsWingFilter}>
+                  <SelectTrigger className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400">
+                    <SelectValue placeholder="All Wings" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Wings</SelectItem>
+                    {uniqueWings.map(wing => (
+                      <SelectItem key={wing} value={wing}>{wing}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Rooms List */}
+              <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+                {availableRoomsForModal.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Building className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No available rooms found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                    {availableRoomsForModal.map((room) => {
+                      const roomDisplay = /^\d+$/.test(room.roomNumber.toString()) && room.wing
+                        ? `${room.wing}${room.roomNumber}`
+                        : `${room.roomNumber} (Wing ${room.wing})`;
+                      
+                      return (
+                        <div
+                          key={room.id}
+                          className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-100 dark:to-indigo-100 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-bold text-gray-900 dark:text-gray-900">{roomDisplay}</span>
+                            <Badge className={room.gender === "Male" ? "bg-blue-500" : "bg-pink-500"}>
+                              {room.gender}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-700 space-y-1">
+                            <p><strong>Wing:</strong> {room.wing}</p>
+                            <p><strong>Available Beds:</strong> {room.availableBeds} / {room.totalBeds}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* Tags Tab */}
+            <TabsContent value="tags" className="space-y-4">
+              {/* Search */}
+              <Input
+                placeholder="Search tags by number..."
+                value={tagsSearchQuery}
+                onChange={(e) => setTagsSearchQuery(e.target.value)}
+                className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400"
+              />
+              
+              {/* Tags List */}
+              <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+                {availableTagsForModal.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Tag className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No available tags found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-4">
+                    {availableTagsForModal.map((tag) => (
+                      <div
+                        key={tag.id}
+                        className="p-3 border rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-100 dark:to-pink-100 hover:shadow-md transition-all text-center"
+                      >
+                        <span className="font-mono font-bold text-gray-900 dark:text-gray-900">
+                          {tag.tagNumber}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
       {/* Details view moved to dedicated route */}
         </div>

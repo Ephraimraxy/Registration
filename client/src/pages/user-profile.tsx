@@ -100,6 +100,7 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isValidatingToken, setIsValidatingToken] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
+  const [linkType, setLinkType] = useState<"full-edit" | "specialization-only" | null>(null);
   const { toast } = useToast();
 
   const form = useForm<EditUserForm>({
@@ -172,6 +173,9 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
         return;
       }
 
+      // Get link type (default to full-edit for backward compatibility)
+      const type = linkData.linkType || "full-edit";
+      setLinkType(type as "full-edit" | "specialization-only");
       setTokenValid(true);
       setIsValidatingToken(false);
     } catch (error: any) {
@@ -297,25 +301,61 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
   const onSubmit = async (data: EditUserForm) => {
     if (!userData) return;
 
+    // For specialization-only mode, validate only specialization
+    if (linkType === "specialization-only") {
+      if (!data.specialization || data.specialization.trim() === "") {
+        form.setError("specialization", {
+          type: "manual",
+          message: "Please select your area of specialization",
+        });
+        toast({
+          title: "Validation Error",
+          description: "Please select your area of specialization",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // For full-edit mode, validate all required fields
+      const isValid = await form.trigger();
+      if (!isValid) {
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const userRef = doc(db, "users", userData.id);
-      await updateDoc(userRef, {
-        firstName: data.firstName,
-        surname: data.surname,
-        middleName: data.middleName || undefined,
-        email: data.email || undefined,
-        phone: data.phone,
-        lga: data.lga,
-        nin: data.nin || undefined,
-        dob: data.dob,
-        specialization: data.specialization,
-      });
+      
+      // If specialization-only mode, only update specialization
+      if (linkType === "specialization-only") {
+        await updateDoc(userRef, {
+          specialization: data.specialization,
+        });
+        
+        toast({
+          title: "Success",
+          description: "Your area of specialization has been updated successfully!",
+        });
+      } else {
+        // Full edit mode - update all fields
+        await updateDoc(userRef, {
+          firstName: data.firstName,
+          surname: data.surname,
+          middleName: data.middleName || undefined,
+          email: data.email || undefined,
+          phone: data.phone,
+          lga: data.lga,
+          nin: data.nin || undefined,
+          dob: data.dob,
+          specialization: data.specialization,
+        });
 
-      toast({
-        title: "Success",
-        description: "Your profile has been updated successfully!",
-      });
+        toast({
+          title: "Success",
+          description: "Your profile has been updated successfully!",
+        });
+      }
 
       // Update local state
       setUserData({
@@ -388,7 +428,9 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
                 </div>
                 <h1 className="text-3xl font-bold">Welcome!</h1>
                 <p className="text-muted-foreground">
-                  Please enter your tag number to access and update your profile information.
+                  {linkType === "specialization-only"
+                    ? "Please enter your tag number to view your details and select your area of specialization."
+                    : "Please enter your tag number to access and update your profile information."}
                 </p>
                 <Button onClick={() => setStep("tag-input")} size="lg" className="mt-4">
                   Continue
@@ -440,7 +482,9 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
             <CardHeader>
               <CardTitle>Your Profile Information</CardTitle>
               <p className="text-sm text-muted-foreground mt-2">
-                You can edit the fields below. Some fields are read-only.
+                {linkType === "specialization-only" 
+                  ? "You can view your details below. Only the area of specialization can be selected and updated."
+                  : "You can edit the fields below. Some fields are read-only."}
               </p>
             </CardHeader>
             <CardContent>
@@ -466,8 +510,90 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
                     </div>
                   </div>
 
-                  {/* Editable fields */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* If specialization-only mode, show all details as read-only */}
+                  {linkType === "specialization-only" ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                        <div>
+                          <Label className="text-muted-foreground">First Name</Label>
+                          <p className="font-medium">{userData.firstName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Surname</Label>
+                          <p className="font-medium">{userData.surname}</p>
+                        </div>
+                        {userData.middleName && (
+                          <div>
+                            <Label className="text-muted-foreground">Middle Name</Label>
+                            <p className="font-medium">{userData.middleName}</p>
+                          </div>
+                        )}
+                        <div>
+                          <Label className="text-muted-foreground">Phone Number</Label>
+                          <p className="font-medium">{userData.phone}</p>
+                        </div>
+                        {userData.email && (
+                          <div>
+                            <Label className="text-muted-foreground">Email Address</Label>
+                            <p className="font-medium">{userData.email}</p>
+                          </div>
+                        )}
+                        <div>
+                          <Label className="text-muted-foreground">Local Government Area (LGA)</Label>
+                          <p className="font-medium">{userData.lga}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Date of Birth</Label>
+                          <p className="font-medium">{userData.dob ? new Date(userData.dob).toLocaleDateString() : "N/A"}</p>
+                        </div>
+                        {userData.nin && (
+                          <div>
+                            <Label className="text-muted-foreground">National Identification Number (NIN)</Label>
+                            <p className="font-medium">{userData.nin}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Only specialization is editable */}
+                      <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                        <FormField
+                          control={form.control}
+                          name="specialization"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base font-semibold">Area of Specialization *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500 h-12 text-base">
+                                    <SelectValue placeholder="Select your area of specialization" className="text-gray-900" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="bg-white dark:bg-white border-2 border-gray-200 shadow-xl max-h-[300px]">
+                                  {specializations.map((spec) => (
+                                    <SelectItem 
+                                      key={spec.id} 
+                                      value={spec.name}
+                                      className="text-gray-900 hover:bg-blue-50 dark:hover:bg-blue-50 focus:bg-blue-100 dark:focus:bg-blue-100 py-3 text-base cursor-pointer"
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{spec.name}</span>
+                                        {spec.description && (
+                                          <span className="text-xs text-gray-600 mt-1">{spec.description}</span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Full edit mode - show all editable fields */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="firstName"
@@ -607,40 +733,41 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="specialization"
-                      render={({ field }) => (
-                        <FormItem className="sm:col-span-2">
-                          <FormLabel>Area of Specialization *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500 h-12 text-base">
-                                <SelectValue placeholder="Select your area of specialization" className="text-gray-900" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-white dark:bg-white border-2 border-gray-200 shadow-xl max-h-[300px]">
-                              {specializations.map((spec) => (
-                                <SelectItem 
-                                  key={spec.id} 
-                                  value={spec.name}
-                                  className="text-gray-900 hover:bg-blue-50 dark:hover:bg-blue-50 focus:bg-blue-100 dark:focus:bg-blue-100 py-3 text-base cursor-pointer"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{spec.name}</span>
-                                    {spec.description && (
-                                      <span className="text-xs text-gray-600 mt-1">{spec.description}</span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                      <FormField
+                        control={form.control}
+                        name="specialization"
+                        render={({ field }) => (
+                          <FormItem className="sm:col-span-2">
+                            <FormLabel>Area of Specialization *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-white dark:bg-white text-gray-900 border-gray-300 focus:border-blue-500 h-12 text-base">
+                                  <SelectValue placeholder="Select your area of specialization" className="text-gray-900" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="bg-white dark:bg-white border-2 border-gray-200 shadow-xl max-h-[300px]">
+                                {specializations.map((spec) => (
+                                  <SelectItem 
+                                    key={spec.id} 
+                                    value={spec.name}
+                                    className="text-gray-900 hover:bg-blue-50 dark:hover:bg-blue-50 focus:bg-blue-100 dark:focus:bg-blue-100 py-3 text-base cursor-pointer"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{spec.name}</span>
+                                      {spec.description && (
+                                        <span className="text-xs text-gray-600 mt-1">{spec.description}</span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <Button type="submit" disabled={isSaving} size="lg">
@@ -652,7 +779,7 @@ export function UserProfile({ token: propToken }: UserProfileProps) {
                       ) : (
                         <>
                           <Save className="mr-2 h-4 w-4" />
-                          Save Changes
+                          {linkType === "specialization-only" ? "Submit Specialization" : "Save Changes"}
                         </>
                       )}
                     </Button>

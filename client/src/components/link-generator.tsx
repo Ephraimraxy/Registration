@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const linkGeneratorSchema = z.object({
   days: z.number().min(0).max(365),
   hours: z.number().min(0).max(23),
+  linkType: z.enum(["full-edit", "specialization-only"]),
 });
 
 type LinkGeneratorForm = z.infer<typeof linkGeneratorSchema>;
@@ -29,6 +30,7 @@ interface AccessLink {
   expiresAt: any;
   createdAt: any;
   isActive: boolean;
+  linkType?: "full-edit" | "specialization-only";
 }
 
 export function LinkGenerator() {
@@ -47,6 +49,7 @@ export function LinkGenerator() {
     defaultValues: {
       days: 7,
       hours: 0,
+      linkType: "full-edit",
     },
   });
 
@@ -99,6 +102,7 @@ export function LinkGenerator() {
         expiresAt: Timestamp.fromDate(expiresAt),
         createdAt: serverTimestamp(),
         isActive: true,
+        linkType: data.linkType,
       });
 
       setGeneratedToken(token);
@@ -272,6 +276,80 @@ export function LinkGenerator() {
                 </DialogHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {/* Link Type Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-gray-900 dark:text-gray-900 font-semibold">Link Type</Label>
+                      <div className="grid grid-cols-1 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="linkType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <div className="grid grid-cols-1 gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => field.onChange("full-edit")}
+                                    className={`p-4 rounded-lg border-2 transition-all duration-300 text-left ${
+                                      field.value === "full-edit"
+                                        ? "border-blue-600 bg-blue-50 dark:bg-blue-100 shadow-md"
+                                        : "border-gray-300 bg-white dark:bg-white hover:border-blue-400"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                        field.value === "full-edit"
+                                          ? "border-blue-600 bg-blue-600"
+                                          : "border-gray-400"
+                                      }`}>
+                                        {field.value === "full-edit" && (
+                                          <div className="w-2 h-2 rounded-full bg-white" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-gray-900">Full Edit Access</div>
+                                        <div className="text-sm text-gray-600 mt-1">
+                                          Users can view and edit all their profile details
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => field.onChange("specialization-only")}
+                                    className={`p-4 rounded-lg border-2 transition-all duration-300 text-left ${
+                                      field.value === "specialization-only"
+                                        ? "border-purple-600 bg-purple-50 dark:bg-purple-100 shadow-md"
+                                        : "border-gray-300 bg-white dark:bg-white hover:border-purple-400"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                        field.value === "specialization-only"
+                                          ? "border-purple-600 bg-purple-600"
+                                          : "border-gray-400"
+                                      }`}>
+                                        {field.value === "specialization-only" && (
+                                          <div className="w-2 h-2 rounded-full bg-white" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="font-semibold text-gray-900">Specialization Only</div>
+                                        <div className="text-sm text-gray-600 mt-1">
+                                          Users can only view their details and select area of specialization
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -381,6 +459,9 @@ export function LinkGenerator() {
                       <p className="text-xs text-gray-700 dark:text-gray-700 font-medium">
                         💡 Share only the token above with users. They can access it at: <span className="font-mono">{window.location.origin}/profile/[token]</span>
                       </p>
+                      <p className="text-xs text-gray-700 dark:text-gray-700 mt-1">
+                        Link Type: <strong>{form.getValues("linkType") === "full-edit" ? "Full Edit Access" : "Specialization Only"}</strong>
+                      </p>
                     </div>
                     <p className="text-xs text-gray-700 dark:text-gray-700">
                       Expires in: {form.getValues("days")} day(s) and {form.getValues("hours")} hour(s)
@@ -420,6 +501,11 @@ export function LinkGenerator() {
                             )}
                             {expired && (
                               <Badge variant="destructive">Expired</Badge>
+                            )}
+                            {link.linkType && (
+                              <Badge className={link.linkType === "full-edit" ? "bg-blue-500" : "bg-purple-500"}>
+                                {link.linkType === "full-edit" ? "Full Edit" : "Specialization Only"}
+                              </Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">

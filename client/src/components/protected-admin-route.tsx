@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from "firebase/auth";
+import { useLocation, Switch, Route } from "wouter";
 import { auth } from "@/lib/firebase";
 import { AdminLogin } from "./admin-login";
 import { AdminDashboard } from "./admin-dashboard";
+import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 
 export function ProtectedAdminRoute() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [location] = useLocation();
 
   useEffect(() => {
     // Listen for auth state changes
@@ -30,11 +33,12 @@ export function ProtectedAdminRoute() {
     return () => {
       unsubscribe();
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      if (auth.currentUser) {
+      // Only sign out if navigating completely away from /admin routes
+      if (auth.currentUser && !location.startsWith('/admin')) {
         signOut(auth).catch(console.error);
       }
     };
-  }, []);
+  }, [location]);
 
   const handleLoginSuccess = () => {
     // Auth state will update automatically via onAuthStateChanged
@@ -60,6 +64,16 @@ export function ProtectedAdminRoute() {
     return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <AdminDashboard />;
+  // Handle nested routes within admin section
+  return (
+    <Switch>
+      <Route path="/admin/rooms-tags">
+        <RoomsTagsDetailPage onBack={() => window.history.back()} />
+      </Route>
+      <Route path="/admin">
+        <AdminDashboard />
+      </Route>
+    </Switch>
+  );
 }
 

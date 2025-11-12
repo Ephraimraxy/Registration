@@ -834,7 +834,7 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
-            <Button onClick={() => setLocation('/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <Button onClick={() => setLocation('/admin/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <Building className="mr-2 h-4 w-4" />
               🏠 View Rooms & Tags Details
             </Button>
@@ -1144,7 +1144,7 @@ export function AdminDashboard() {
                         <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
                           <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4" />
                           Custom
-                        </TabsTrigger>
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
             </div>

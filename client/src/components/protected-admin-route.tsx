@@ -9,7 +9,7 @@ import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
 export function ProtectedAdminRoute() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     // Listen for auth state changes

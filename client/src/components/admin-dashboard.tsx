@@ -1,0 +1,1559 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useLocation, Link } from "wouter";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Users, Upload, Download, Building, ChevronDown, UserPlus, Settings, Trash, Loader2, FileText, CheckCircle, AlertCircle, LogOut, CheckSquare, ClipboardCheck, Tag } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { collection, onSnapshot, query, where, orderBy, doc, writeBatch, getDocs } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { db, auth } from "@/lib/firebase";
+import type { User, Room, Tag as TagType, Stats } from "@shared/schema";
+import { StudentTable } from "./student-table";
+import { UploadModal } from "./upload-modal";
+import { EditStudentModal } from "./edit-student-modal";
+import { RoomsTagsDetailPage } from "./rooms-tags-detail-page";
+import { SpecializationManagement } from "./specialization-management";
+import { LinkGenerator } from "./link-generator";
+import { AttendanceManagement } from "./attendance-management";
+import { RoomSettings } from "./room-settings";
+import { DefaultStateSettings } from "./default-state-settings";
+import { RegistrationFormSettings } from "./registration-form-settings";
+import { exportUsersToExcel } from "@/lib/excel-utils";
+import { exportUsersToPDF } from "@/lib/pdf-utils";
+import { clearAllData } from "@/lib/db-init";
+import { useToast } from "@/hooks/use-toast";
+import { ClearDataDialog } from "./clear-data-dialog";
+
+export function AdminDashboard() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [tags, setTags] = useState<TagType[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [maleCount, setMaleCount] = useState(0);
+  const [femaleCount, setFemaleCount] = useState(0);
+  const [previousUserIds, setPreviousUserIds] = useState<Set<string>>(new Set());
+  
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadType, setUploadType] = useState<'rooms' | 'tags' | 'users'>('rooms');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [, setLocation] = useLocation();
+  const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
+  const [exportType, setExportType] = useState<'full' | 'summary' | 'custom'>('full');
+  const [showCustomExportDialog, setShowCustomExportDialog] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  
+  // Bulk delete state for tags and rooms
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState(0);
+  const [bulkDeleteStatus, setBulkDeleteStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
+  const [bulkDeleteType, setBulkDeleteType] = useState<'tags' | 'rooms' | null>(null);
+  
+  // Clear data dialog state
+  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  const [isClearingData, setIsClearingData] = useState(false);
+  
+  // Rooms & Tags Quick View Modal
+  const [showRoomsTagsModal, setShowRoomsTagsModal] = useState(false);
+  const [roomsSearchQuery, setRoomsSearchQuery] = useState("");
+  const [tagsSearchQuery, setTagsSearchQuery] = useState("");
+  const [roomsGenderFilter, setRoomsGenderFilter] = useState("all");
+  const [roomsWingFilter, setRoomsWingFilter] = useState("all");
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [wingFilter, setWingFilter] = useState("all");
+  const [stateFilter, setStateFilter] = useState("all");
+  
+  const { toast } = useToast();
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Function to play beep sound
+  const playBeepSound = () => {
+    try {
+      // Create a simple beep using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800; // Beep frequency
+      oscillator.type = "sine";
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (error) {
+      console.log("Could not play beep sound:", error);
+    }
+  };
+
+  // Function to show browser notification
+  const showNewUserNotification = (user: User) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const notification = new Notification("🎉 New User Registered!", {
+        body: `${user.firstName} ${user.surname} (${user.gender}) - ${user.stateOfOrigin || "N/A"}`,
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        tag: `user-${user.id}`,
+        requireInteraction: false,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      // Auto close after 5 seconds
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
+    }
+  };
+
+  // Force refresh function
+  const refreshData = async () => {
+    try {
+      const [usersSnapshot, roomsSnapshot, tagsSnapshot] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "rooms")),
+        getDocs(collection(db, "tags")),
+      ]);
+
+      const userData = usersSnapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.firstName && data.surname && !data._placeholder;
+        })
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        })) as User[];
+
+      const roomData = roomsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Room[];
+
+      const tagData = tagsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as TagType[];
+
+      setUsers(userData);
+      setRooms(roomData);
+      setTags(tagData);
+      
+      console.log("Data refreshed manually");
+      console.log("Users:", userData.length);
+      console.log("Rooms:", roomData.length);
+      console.log("Tags:", tagData.length);
+      
+      toast({
+        title: "Data Refreshed",
+        description: "All data has been refreshed from the database.",
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Real-time listeners
+  useEffect(() => {
+    const unsubscribeUsers = onSnapshot(
+      query(collection(db, "users"), orderBy("createdAt", "desc")),
+      (snapshot) => {
+        const userData = snapshot.docs
+          .filter(doc => {
+            const data = doc.data();
+            // Filter out placeholder documents and invalid users (email is now optional)
+            return data.firstName && data.surname && !data._placeholder;
+          })
+          .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        })) as User[];
+        
+        // Detect new users
+        const currentUserIds = new Set(userData.map(u => u.id));
+        const newUsers = userData.filter(user => !previousUserIds.has(user.id));
+        
+        // Update previous user IDs
+        setPreviousUserIds(currentUserIds);
+        
+        // Show notifications and play beep for new users
+        if (newUsers.length > 0 && previousUserIds.size > 0) {
+          newUsers.forEach(user => {
+            playBeepSound();
+            showNewUserNotification(user);
+            toast({
+              title: "🎉 New Registration!",
+              description: `${user.firstName} ${user.surname} (${user.gender}) has been registered.`,
+              duration: 5000,
+            });
+          });
+        }
+        
+        setUsers(userData);
+        console.log("Users updated:", userData.length, "valid users");
+        
+        // Calculate gender counts
+        const male = userData.filter(u => u.gender === "Male").length;
+        const female = userData.filter(u => u.gender === "Female").length;
+        setMaleCount(male);
+        setFemaleCount(female);
+      }
+    );
+
+    const unsubscribeRooms = onSnapshot(
+      collection(db, "rooms"),
+      (snapshot) => {
+        const roomData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Room[];
+        setRooms(roomData);
+        console.log("Rooms updated:", roomData.length, "rooms");
+      }
+    );
+
+    const unsubscribeTags = onSnapshot(
+      collection(db, "tags"),
+      (snapshot) => {
+        const tagData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as TagType[];
+        setTags(tagData);
+        console.log("Tags updated:", tagData.length, "tags");
+      }
+    );
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeRooms();
+      unsubscribeTags();
+    };
+  }, []);
+
+  // Update total students count
+  useEffect(() => {
+    setTotalStudents(users.length);
+  }, [users]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...users];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.firstName.toLowerCase().includes(query) ||
+        user.surname.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query) ||
+        user.phone.includes(query)
+      );
+    }
+
+    // Filter by tag number (accepts formats like "005" or "TAG-005")
+    if (tagSearchQuery) {
+      const tagQuery = tagSearchQuery.trim().toUpperCase();
+      // Normalize the search query - remove "TAG-" prefix if present, pad with zeros
+      let normalizedTagQuery = tagQuery;
+      if (normalizedTagQuery.startsWith("TAG-")) {
+        normalizedTagQuery = normalizedTagQuery.replace("TAG-", "");
+      }
+      // Pad with zeros if it's just numbers (e.g., "5" -> "005")
+      if (/^\d+$/.test(normalizedTagQuery)) {
+        normalizedTagQuery = normalizedTagQuery.padStart(3, "0");
+      }
+      
+      filtered = filtered.filter(user => {
+        if (!user.tagNumber) return false;
+        const userTag = user.tagNumber.toUpperCase();
+        // Check if tag matches in various formats
+        return userTag === tagQuery || 
+               userTag === `TAG-${normalizedTagQuery}` ||
+               userTag === normalizedTagQuery ||
+               userTag.includes(tagQuery) ||
+               userTag.includes(normalizedTagQuery);
+      });
+    }
+
+    if (genderFilter && genderFilter !== "all") {
+      filtered = filtered.filter(user => user.gender === genderFilter);
+    }
+
+    if (wingFilter && wingFilter !== "all") {
+      filtered = filtered.filter(user => user.roomNumber?.startsWith(wingFilter));
+    }
+
+    if (stateFilter && stateFilter !== "all") {
+      filtered = filtered.filter(user => user.stateOfOrigin === stateFilter);
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchQuery, tagSearchQuery, genderFilter, wingFilter, stateFilter]);
+
+  const handleUpload = (type: 'rooms' | 'tags' | 'users') => {
+    setUploadType(type);
+    setShowUploadModal(true);
+  };
+
+  const handleFullExport = () => {
+    try {
+      if (exportFormat === 'excel') {
+        exportUsersToExcel(users, 'full');
+        toast({
+          title: "Export Successful",
+          description: `Students data has been exported to Excel (full format) successfully!`,
+        });
+      } else {
+        exportUsersToPDF(users, 'full');
+        toast({
+          title: "Export Successful",
+          description: `PDF report generated for ${users.length} students (full format) successfully!`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCustomExportClick = () => {
+    setShowCustomExportDialog(true);
+  };
+
+  const handleCustomExport = () => {
+    if (selectedColumns.length === 0) {
+      toast({
+        title: "No Columns Selected",
+        description: "Please select at least one column to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (exportFormat === 'excel') {
+        exportUsersToExcel(users, 'custom', selectedColumns);
+        toast({
+          title: "Export Successful",
+          description: `Students data has been exported to Excel with selected columns successfully!`,
+        });
+      } else {
+        // For PDF, we'll use full export with a note
+        exportUsersToPDF(users, 'full');
+        toast({
+          title: "Export Successful",
+          description: `PDF report generated. Note: Custom column selection is available for Excel exports.`,
+        });
+      }
+      setShowCustomExportDialog(false);
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const availableColumns = [
+    'First Name',
+    'Middle Name',
+    'Surname',
+    'Full Name',
+    'Date of Birth',
+    'Gender',
+    'Phone',
+    'Email',
+    'NIN',
+    'State of Origin',
+    'LGA',
+    'Wing',
+    'Room Number',
+    'Bed Number',
+    'Room Status',
+    'Tag Number',
+    'Tag Status',
+    'Specialization',
+    'VIP Status',
+    'Registration Date',
+  ];
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+  };
+
+  const handleViewDetails = (user: User) => {
+    // Store user data in localStorage and navigate to details page
+    localStorage.setItem('viewingUser', JSON.stringify(user));
+    window.location.href = '/user-details';
+  };
+
+  // Bulk delete functions for tags and rooms
+  const handleBulkDeleteTags = async () => {
+    // Force refresh tags data before checking
+    const tagsSnapshot = await getDocs(collection(db, "tags"));
+    const currentTags = tagsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as TagType[];
+    
+    // Cross-reference with users to ensure tags are truly available
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const currentUsers = usersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as User[];
+    
+    const availableTags = currentTags.filter(tag => {
+      if (tag.isAssigned) return false;
+      // Check if any user has this tag assigned
+      return !currentUsers.some(user => 
+        user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+      );
+    });
+    console.log("Current tags in database:", currentTags.length);
+    console.log("Available tags:", availableTags.length);
+    
+    if (availableTags.length === 0) {
+      toast({
+        title: "No Available Tags",
+        description: "There are no available tags to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkDeleteType('tags');
+    setBulkDeleteStatus('processing');
+    setBulkDeleteProgress(0);
+    setBulkDeleteCount(0);
+
+    try {
+      let deletedCount = 0;
+
+      // Process in batches of 500 (Firebase limit)
+      const batchSize = 500;
+      for (let i = 0; i < availableTags.length; i += batchSize) {
+        const tagBatch = availableTags.slice(i, i + batchSize);
+        const batch = writeBatch(db);
+        
+        tagBatch.forEach(tag => {
+          batch.delete(doc(db, "tags", tag.id));
+        });
+
+        await batch.commit();
+        deletedCount += tagBatch.length;
+        setBulkDeleteCount(deletedCount);
+        setBulkDeleteProgress((deletedCount / availableTags.length) * 100);
+      }
+
+      setBulkDeleteStatus('success');
+      toast({
+        title: "✅ Tags Deleted Successfully",
+        description: `Successfully deleted ${deletedCount} available tags.`,
+      });
+
+      // Reset after success
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+        setBulkDeleteType(null);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Error deleting tags:", error);
+      setBulkDeleteStatus('error');
+      toast({
+        title: "❌ Delete Failed",
+        description: error.message || "Failed to delete tags. Please try again.",
+        variant: "destructive",
+      });
+      
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+        setBulkDeleteType(null);
+      }, 3000);
+    }
+  };
+
+  const handleBulkDeleteRooms = async () => {
+    // Force refresh rooms data before checking
+    const roomsSnapshot = await getDocs(collection(db, "rooms"));
+    const currentRooms = roomsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Room[];
+    
+    const availableRooms = currentRooms.filter(room => room.availableBeds > 0);
+    console.log("Current rooms in database:", currentRooms.length);
+    console.log("Available rooms:", availableRooms.length);
+    
+    if (availableRooms.length === 0) {
+      toast({
+        title: "No Available Rooms",
+        description: "There are no available rooms to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkDeleteType('rooms');
+    setBulkDeleteStatus('processing');
+    setBulkDeleteProgress(0);
+    setBulkDeleteCount(0);
+
+    try {
+      let deletedCount = 0;
+
+      // Process in batches of 500 (Firebase limit)
+      const batchSize = 500;
+      for (let i = 0; i < availableRooms.length; i += batchSize) {
+        const roomBatch = availableRooms.slice(i, i + batchSize);
+        const batch = writeBatch(db);
+        
+        roomBatch.forEach(room => {
+          batch.delete(doc(db, "rooms", room.id));
+        });
+
+        await batch.commit();
+        deletedCount += roomBatch.length;
+        setBulkDeleteCount(deletedCount);
+        setBulkDeleteProgress((deletedCount / availableRooms.length) * 100);
+      }
+
+      setBulkDeleteStatus('success');
+      toast({
+        title: "✅ Rooms Deleted Successfully",
+        description: `Successfully deleted ${deletedCount} available rooms.`,
+      });
+
+      // Reset after success
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+        setBulkDeleteType(null);
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Error deleting rooms:", error);
+      setBulkDeleteStatus('error');
+      toast({
+        title: "❌ Delete Failed",
+        description: error.message || "Failed to delete rooms. Please try again.",
+        variant: "destructive",
+      });
+      
+      setTimeout(() => {
+        setBulkDeleteStatus('idle');
+        setBulkDeleteProgress(0);
+        setBulkDeleteCount(0);
+        setBulkDeleteType(null);
+      }, 3000);
+    }
+  };
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setTagSearchQuery("");
+    setGenderFilter("all");
+    setWingFilter("all");
+    setStateFilter("all");
+  };
+
+  const handleClearAllData = async () => {
+    setIsClearingData(true);
+    try {
+      const success = await clearAllData();
+      if (success) {
+        toast({
+          title: "✅ Database Cleared",
+          description: "All data has been successfully cleared from the database.",
+        });
+        setShowClearDataDialog(false);
+      } else {
+        throw new Error("Failed to clear data");
+      }
+    } catch (error: any) {
+      console.error("Error clearing data:", error);
+      toast({
+        title: "❌ Clear Failed",
+        description: error.message || "Failed to clear database. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearingData(false);
+    }
+  };
+
+
+  const uniqueStates = Array.from(new Set(users?.map(user => user.stateOfOrigin).filter(Boolean) ?? [])).sort();
+  const uniqueWings = Array.from(new Set(rooms?.map(room => room.wing).filter(Boolean) ?? [])).sort();
+  
+  // Filter available rooms for modal
+  const availableRoomsForModal = rooms.filter(room => {
+    const matchesSearch = !roomsSearchQuery || 
+      room.roomNumber.toString().toLowerCase().includes(roomsSearchQuery.toLowerCase()) ||
+      room.wing.toLowerCase().includes(roomsSearchQuery.toLowerCase());
+    const matchesGender = roomsGenderFilter === "all" || room.gender === roomsGenderFilter;
+    const matchesWing = roomsWingFilter === "all" || room.wing === roomsWingFilter;
+    return matchesSearch && matchesGender && matchesWing && room.availableBeds > 0;
+  }).sort((a, b) => {
+    // Sort by wing, then by room number
+    if (a.wing !== b.wing) return a.wing.localeCompare(b.wing);
+    const aNum = parseInt(a.roomNumber.toString().replace(/\D/g, '')) || 0;
+    const bNum = parseInt(b.roomNumber.toString().replace(/\D/g, '')) || 0;
+    return aNum - bNum;
+  });
+  
+  // Filter available tags for modal
+  // A tag is truly available only if:
+  // 1. tag.isAssigned is false, AND
+  // 2. No user in the users table has this tagNumber assigned
+  const availableTagsForModal = tags.filter(tag => {
+    const matchesSearch = !tagsSearchQuery || 
+      tag.tagNumber.toLowerCase().includes(tagsSearchQuery.toLowerCase());
+    
+    // Check if tag is marked as assigned
+    if (tag.isAssigned) {
+      return false;
+    }
+    
+    // Cross-reference with users table to ensure no user has this tag
+    const isAssignedToUser = users.some(user => 
+      user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+    );
+    
+    return matchesSearch && !isAssignedToUser;
+  }).sort((a, b) => {
+    // Sort by tag number
+    const aNum = parseInt(a.tagNumber.replace(/\D/g, '')) || 0;
+    const bNum = parseInt(b.tagNumber.replace(/\D/g, '')) || 0;
+    return aNum - bNum;
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
+      {/* Navigation */}
+      <nav className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 py-3 sm:py-0 sm:h-20">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-center sm:justify-start">
+              <div className="p-1.5 sm:p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Building className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-lg text-center sm:text-left">
+                  <span className="hidden sm:inline">ISAC ACCREDITATION SYSTEM</span>
+                  <span className="sm:hidden">ISAC ACCREDITATION</span>
+                </h1>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <Link href="/" className="w-full sm:w-auto">
+                <Button
+                  variant="default"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-white text-blue-600 hover:bg-blue-50 shadow-lg transform hover:scale-105"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">👤 Register User</span>
+                  <span className="sm:hidden">Register</span>
+                </Button>
+              </Link>
+              <Button
+                variant="secondary"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-white/30"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">⚙️ Admin Dashboard</span>
+                <span className="sm:hidden">Admin</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await signOut(auth);
+                    toast({
+                      title: "Logged Out",
+                      description: "You have been successfully logged out.",
+                    });
+                    window.location.href = "/admin";
+                  } catch (error: any) {
+                    toast({
+                      title: "Logout Failed",
+                      description: error.message || "Failed to log out. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold transition-all duration-300 bg-red-500/20 text-white hover:bg-red-500/30 backdrop-blur-sm border-red-300/30"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">🚪 Logout</span>
+                <span className="sm:hidden">Logout</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Admin Dashboard</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage user registrations, rooms, and tag assignments</p>
+      </div>
+
+        {/* Main Tabs Navigation */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-6 h-auto p-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <TabsTrigger value="overview" className="flex items-center gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+              <span className="sm:hidden">Home</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <Users className="h-4 w-4" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+              <span className="sm:hidden">Config</span>
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="flex items-center gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <ClipboardCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Attendance</span>
+              <span className="sm:hidden">Attend</span>
+            </TabsTrigger>
+            <TabsTrigger value="data" className="flex items-center gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Data Mgmt</span>
+              <span className="sm:hidden">Data</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6 mt-6">
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      {/* Total Users Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-bold text-foreground" data-testid="stat-total-users">
+                  {totalStudents}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Male Users Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Male Users</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="stat-male-users">
+                  {maleCount}
+                </p>
+      </div>
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Female Users Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Female Users</p>
+                <p className="text-2xl font-bold text-pink-600 dark:text-pink-400" data-testid="stat-female-users">
+                  {femaleCount}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-pink-100 dark:bg-pink-900/20 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+              </div>
+            </div>
+          </CardContent>
+            </Card>
+            </div>
+
+            {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+            <Button onClick={() => setLocation('/admin/rooms-tags')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Building className="mr-2 h-4 w-4" />
+              🏠 View Rooms & Tags Details
+            </Button>
+                  <Button onClick={() => setShowRoomsTagsModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                    <Building className="mr-2 h-4 w-4" />
+                    📋 Quick View: Rooms & Tags
+                  </Button>
+                  <Link href="/" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      👤 Register New User
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6 mt-6">
+            {/* Filters */}
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                  <CardTitle className="text-lg sm:text-xl font-bold text-blue-800 dark:text-blue-200 flex items-center gap-2 sm:gap-3">
+                    <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <span className="text-base sm:text-xl">Filters & Search</span>
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={resetFilters} data-testid="button-reset-filters" className="w-full sm:w-auto">
+                    Reset Filters
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div>
+                    <Input
+                      placeholder="Search users..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      data-testid="input-search"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by Tag Number (e.g., 005 or TAG-005)"
+                      value={tagSearchQuery}
+                      onChange={(e) => setTagSearchQuery(e.target.value)}
+                      data-testid="input-tag-search"
+                      className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                    />
+                  </div>
+                  
+                  <Select value={genderFilter} onValueChange={setGenderFilter}>
+                    <SelectTrigger data-testid="select-gender-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All Genders" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All Genders
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Male" className="hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm"></span>
+                          👨 Male
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Female" className="hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 shadow-sm"></span>
+                          👩 Female
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={wingFilter} onValueChange={setWingFilter}>
+                    <SelectTrigger data-testid="select-wing-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All Wings" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All Wings
+                        </span>
+                      </SelectItem>
+                      {uniqueWings?.filter(Boolean).map((wing, index) => (
+                        <SelectItem 
+                          key={wing} 
+                          value={wing}
+                          className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                            index % 4 === 0 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                            index % 4 === 1 ? 'hover:bg-cyan-50 dark:hover:bg-cyan-900/30 focus:bg-cyan-100 dark:focus:bg-cyan-800/40' :
+                            index % 4 === 2 ? 'hover:bg-sky-50 dark:hover:bg-sky-900/30 focus:bg-sky-100 dark:focus:bg-sky-800/40' :
+                            'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <span className={`w-3 h-3 rounded-full shadow-sm ${
+                              index % 4 === 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                              index % 4 === 1 ? 'bg-gradient-to-r from-cyan-500 to-cyan-600' :
+                              index % 4 === 2 ? 'bg-gradient-to-r from-sky-500 to-sky-600' :
+                              'bg-gradient-to-r from-blue-500 to-blue-600'
+                            }`}></span>
+                            Wing {wing}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={stateFilter} onValueChange={setStateFilter}>
+                    <SelectTrigger data-testid="select-state-filter" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0">
+                      <SelectValue placeholder="All States" className="text-gray-900 dark:text-gray-100" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                      <SelectItem value="all" className="hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                        <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-gray-600 shadow-sm"></span>
+                          All States
+                        </span>
+                      </SelectItem>
+                      {uniqueStates?.filter(Boolean).map((state, index) => (
+                        <SelectItem 
+                          key={state} 
+                          value={state}
+                          className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 ${
+                            index % 6 === 0 ? 'hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-100 dark:focus:bg-blue-800/40' :
+                            index % 6 === 1 ? 'hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus:bg-emerald-100 dark:focus:bg-emerald-800/40' :
+                            index % 6 === 2 ? 'hover:bg-violet-50 dark:hover:bg-violet-900/30 focus:bg-violet-100 dark:focus:bg-violet-800/40' :
+                            index % 6 === 3 ? 'hover:bg-amber-50 dark:hover:bg-amber-900/30 focus:bg-amber-100 dark:focus:bg-amber-800/40' :
+                            index % 6 === 4 ? 'hover:bg-rose-50 dark:hover:bg-rose-900/30 focus:bg-rose-100 dark:focus:bg-rose-800/40' :
+                            'hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus:bg-indigo-100 dark:focus:bg-indigo-800/40'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                            <span className={`w-3 h-3 rounded-full shadow-sm ${
+                              index % 6 === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                              index % 6 === 1 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
+                              index % 6 === 2 ? 'bg-gradient-to-r from-violet-500 to-violet-600' :
+                              index % 6 === 3 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                              index % 6 === 4 ? 'bg-gradient-to-r from-rose-500 to-rose-600' :
+                              'bg-gradient-to-r from-indigo-500 to-indigo-600'
+                            }`}></span>
+                            {state}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {(searchQuery || tagSearchQuery || (genderFilter && genderFilter !== "all") || (wingFilter && wingFilter !== "all") || (stateFilter && stateFilter !== "all")) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <span className="text-xs sm:text-sm text-muted-foreground w-full sm:w-auto">Active filters:</span>
+                    {searchQuery && (
+                      <Badge key="search" variant="secondary" className="text-xs">
+                        Search: {searchQuery}
+                      </Badge>
+                    )}
+                    {tagSearchQuery && (
+                      <Badge key="tag-search" variant="secondary" className="text-xs">
+                        Tag: {tagSearchQuery}
+                      </Badge>
+                    )}
+                    {genderFilter && genderFilter !== "all" && (
+                      <Badge key="gender" variant="secondary" className="text-xs">
+                        Gender: {genderFilter}
+                      </Badge>
+                    )}
+                    {wingFilter && wingFilter !== "all" && (
+                      <Badge key="wing" variant="secondary" className="text-xs">
+                        Wing: {wingFilter}
+                      </Badge>
+                    )}
+                    {stateFilter && stateFilter !== "all" && (
+                      <Badge key="state" variant="secondary" className="text-xs">
+                        State: {stateFilter}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Students Table */}
+            <StudentTable 
+              users={filteredUsers} 
+              onEdit={handleEdit}
+              onViewDetails={handleViewDetails}
+            />
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6 mt-6">
+            {/* Specialization Management & Link Generator */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <SpecializationManagement />
+              <LinkGenerator />
+            </div>
+
+            {/* Room Settings & Default State Settings */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <RoomSettings />
+              <DefaultStateSettings />
+            </div>
+
+            {/* Registration Form Settings */}
+            <div className="grid grid-cols-1 gap-4 sm:gap-6">
+              <RegistrationFormSettings />
+            </div>
+          </TabsContent>
+
+          {/* Attendance Tab */}
+          <TabsContent value="attendance" className="space-y-6 mt-6">
+            <AttendanceManagement />
+          </TabsContent>
+
+          {/* Data Management Tab */}
+          <TabsContent value="data" className="space-y-6 mt-6">
+            {/* Upload Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Import</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+            <Button onClick={() => handleUpload('rooms')} data-testid="button-upload-rooms">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Rooms (Excel)
+            </Button>
+            <Button onClick={() => handleUpload('tags')} data-testid="button-upload-tags">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Tags (Excel)
+            </Button>
+                  <Button onClick={() => handleUpload('users')} data-testid="button-upload-users" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Users (Excel)
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Export Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Export</CardTitle>
+              </CardHeader>
+              <CardContent>
+            <div className="flex flex-col gap-4">
+              {/* Export Format Selection */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={exportFormat} onValueChange={(value: 'excel' | 'pdf') => setExportFormat(value)}>
+                  <SelectTrigger className="w-32 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700 focus:ring-0 focus:ring-offset-0" data-testid="select-export-format">
+                    <SelectValue className="text-gray-900 dark:text-gray-100" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-2 border-gray-300 dark:border-gray-700 shadow-2xl">
+                    <SelectItem value="excel" className="hover:bg-green-50 dark:hover:bg-green-900/30 focus:bg-green-100 dark:focus:bg-green-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"></span>
+                        📊 Excel
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="pdf" className="hover:bg-red-50 dark:hover:bg-red-900/30 focus:bg-red-100 dark:focus:bg-red-800/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                      <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-600 shadow-sm"></span>
+                        📄 PDF
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" data-testid="button-export-users">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Users
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
+                        <DropdownMenuItem onClick={handleFullExport} className="cursor-pointer">
+                          <FileText className="mr-2 h-4 w-4" />
+                          Full Export (All Columns)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleCustomExportClick} className="cursor-pointer">
+                          <CheckSquare className="mr-2 h-4 w-4" />
+                          Custom Export (Select Columns)
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+              </div>
+              
+              {/* Export Type Tabs */}
+              <div className="flex justify-center">
+                    <Tabs value={exportType} onValueChange={(value) => setExportType(value as 'full' | 'summary' | 'custom')} className="w-full max-w-md">
+                      <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                        <TabsTrigger value="full" className="flex items-center gap-2 text-xs sm:text-sm">
+                          <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Full</span>
+                          <span className="sm:hidden">All</span>
+                    </TabsTrigger>
+                        <TabsTrigger value="summary" className="flex items-center gap-2 text-xs sm:text-sm">
+                          <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                      Summary
+                    </TabsTrigger>
+                        <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
+                          <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+                          Custom
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bulk Delete Controls */}
+      <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-2 border-red-200 dark:border-red-700">
+        <CardHeader>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                  <CardTitle className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-200 flex items-center gap-2 sm:gap-3">
+                    <Trash className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <span className="text-base sm:text-xl">🗑️ Bulk Delete Operations</span>
+            </CardTitle>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
+                      className="w-full sm:w-auto text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowClearDataDialog(true)}
+                      className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/20"
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Clear All Data
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            {/* Delete Available Tags */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Tags</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {tags.filter(tag => {
+                            if (tag.isAssigned) return false;
+                            return !users.some(user => 
+                              user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                            );
+                          }).length} available tags
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                            disabled={bulkDeleteStatus === 'processing' || tags.filter(tag => {
+                              if (tag.isAssigned) return false;
+                              return !users.some(user => 
+                                user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                              );
+                            }).length === 0}
+                    >
+                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'tags' ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 mr-2" />
+                      )}
+                      Delete All Available Tags
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
+                        <Trash className="h-5 w-5" />
+                        Delete All Available Tags
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
+                              Are you sure you want to delete all {tags.filter(tag => {
+                                if (tag.isAssigned) return false;
+                                return !users.some(user => 
+                                  user.tagNumber && user.tagNumber.toUpperCase() === tag.tagNumber.toUpperCase()
+                                );
+                              }).length} available tags?
+                        This action cannot be undone and will permanently remove these tags from the system.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleBulkDeleteTags}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete All Available Tags
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+
+            {/* Delete Available Rooms */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">Delete Available Rooms</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {rooms.filter(room => room.availableBeds > 0).length} available rooms
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={bulkDeleteStatus === 'processing' || rooms.filter(room => room.availableBeds > 0).length === 0}
+                    >
+                      {bulkDeleteStatus === 'processing' && bulkDeleteType === 'rooms' ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 mr-2" />
+                      )}
+                      Delete All Available Rooms
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-red-800 dark:text-red-200 flex items-center gap-2">
+                        <Trash className="h-5 w-5" />
+                        Delete All Available Rooms
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-red-700 dark:text-red-300">
+                        Are you sure you want to delete all {rooms.filter(room => room.availableBeds > 0).length} available rooms? 
+                        This action cannot be undone and will permanently remove these rooms from the system.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleBulkDeleteRooms}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete All Available Rooms
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Indicator */}
+          {bulkDeleteStatus === 'processing' && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  Deleting {bulkDeleteType}...
+                </span>
+                <span className="text-muted-foreground">
+                  {bulkDeleteCount} items processed
+                </span>
+              </div>
+              <Progress value={bulkDeleteProgress} className="h-3" />
+            </div>
+          )}
+
+          {bulkDeleteStatus === 'success' && (
+            <div className="mt-6 flex items-center gap-2 text-green-600 dark:text-green-400">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Bulk delete completed successfully!</span>
+            </div>
+          )}
+
+          {bulkDeleteStatus === 'error' && (
+            <div className="mt-6 flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Bulk delete failed. Please try again.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+          </TabsContent>
+        </Tabs>
+
+      {/* Custom Export Dialog */}
+      {showCustomExportDialog && (
+        <Dialog open={showCustomExportDialog} onOpenChange={setShowCustomExportDialog}>
+          <DialogContent className="bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900 dark:text-gray-900">Select Columns to Export</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedColumns([...availableColumns])}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedColumns([])}
+                >
+                  Deselect All
+            </Button>
+          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {availableColumns.map((column) => (
+                  <div key={column} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`column-${column}`}
+                      checked={selectedColumns.includes(column)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedColumns([...selectedColumns, column]);
+                        } else {
+                          setSelectedColumns(selectedColumns.filter(c => c !== column));
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor={`column-${column}`}
+                      className="text-sm text-gray-900 dark:text-gray-900 cursor-pointer"
+                    >
+                      {column}
+                    </label>
+                  </div>
+                ))}
+          </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowCustomExportDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCustomExport} disabled={selectedColumns.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Selected ({selectedColumns.length})
+                </Button>
+            </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modals */}
+      {showUploadModal && (
+        <UploadModal
+          type={uploadType}
+          onClose={() => setShowUploadModal(false)}
+        />
+      )}
+
+      {editingUser && (
+        <EditStudentModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+        />
+      )}
+
+      {/* Clear Data Dialog */}
+      <ClearDataDialog
+        open={showClearDataDialog}
+        onOpenChange={setShowClearDataDialog}
+        onConfirm={handleClearAllData}
+        isLoading={isClearingData}
+      />
+
+      {/* Rooms & Tags Quick View Modal */}
+      <Dialog open={showRoomsTagsModal} onOpenChange={setShowRoomsTagsModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-300 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-900 flex items-center gap-2">
+              <Building className="h-6 w-6" />
+              Quick View: Available Rooms & Tags
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Tabs defaultValue="rooms" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="rooms" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Available Rooms ({availableRoomsForModal.length})
+              </TabsTrigger>
+              <TabsTrigger value="tags" className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Available Tags ({availableTagsForModal.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Rooms Tab */}
+            <TabsContent value="rooms" className="space-y-4">
+              {/* Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  placeholder="Search rooms by number or wing..."
+                  value={roomsSearchQuery}
+                  onChange={(e) => setRoomsSearchQuery(e.target.value)}
+                  className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400"
+                />
+                <Select value={roomsGenderFilter} onValueChange={setRoomsGenderFilter}>
+                  <SelectTrigger className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400">
+                    <SelectValue placeholder="All Genders" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={roomsWingFilter} onValueChange={setRoomsWingFilter}>
+                  <SelectTrigger className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400">
+                    <SelectValue placeholder="All Wings" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Wings</SelectItem>
+                    {uniqueWings.map(wing => (
+                      <SelectItem key={wing} value={wing}>{wing}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+        </div>
+              
+              {/* Rooms List */}
+              <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+                {availableRoomsForModal.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Building className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No available rooms found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                    {availableRoomsForModal.map((room) => {
+                      const roomDisplay = /^\d+$/.test(room.roomNumber.toString()) && room.wing
+                        ? `${room.wing}${room.roomNumber}`
+                        : `${room.roomNumber} (Wing ${room.wing})`;
+                      
+                      return (
+                        <div
+                          key={room.id}
+                          className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-100 dark:to-indigo-100 hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-bold text-gray-900 dark:text-gray-900">{roomDisplay}</span>
+                            <Badge className={room.gender === "Male" ? "bg-blue-500" : "bg-pink-500"}>
+                              {room.gender}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-700 space-y-1">
+                            <p><strong>Wing:</strong> {room.wing}</p>
+                            <p><strong>Available Beds:</strong> {room.availableBeds} / {room.totalBeds}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* Tags Tab */}
+            <TabsContent value="tags" className="space-y-4">
+              {/* Search */}
+              <Input
+                placeholder="Search tags by number..."
+                value={tagsSearchQuery}
+                onChange={(e) => setTagsSearchQuery(e.target.value)}
+                className="bg-white dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-400"
+              />
+              
+              {/* Tags List */}
+              <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+                {availableTagsForModal.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Tag className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No available tags found</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-4">
+                    {availableTagsForModal.map((tag) => (
+                      <div
+                        key={tag.id}
+                        className="p-3 border rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-100 dark:to-pink-100 hover:shadow-md transition-all text-center"
+                      >
+                        <span className="font-mono font-bold text-gray-900 dark:text-gray-900">
+                          {tag.tagNumber}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+      </div>
+    </div>
+  );
+}
